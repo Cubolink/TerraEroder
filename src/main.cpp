@@ -32,8 +32,6 @@ void initGL()
 
 
 int main() {
-    std::cout << "Hola mundo" << std::endl;
-
     GLFWwindow *window;
 
     /* Initialize the library */
@@ -52,6 +50,7 @@ int main() {
     glfwMakeContextCurrent(window);
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
         return -1;
+    std::cout << "Current GL Version: " << glad_glGetString(GL_VERSION) << std::endl;
 
     initGL();
 
