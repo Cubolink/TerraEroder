@@ -1,6 +1,5 @@
 
 add_library(renderer
-        color.h
 
         renderer.h
         vertexarray.h

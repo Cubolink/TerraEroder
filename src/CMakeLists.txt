@@ -6,7 +6,10 @@ set(FIRST_PARTY_INCLUDE_DIRECTORIES renderer)
 set(FIRST_PARTY_LIBRARIES renderer)
 add_subdirectory(renderer)
 
-add_executable(terra_eroder main.cpp geometry.h shape_factory.h shape_factory.cpp)
+add_executable(terra_eroder main.cpp
+        geometry.h
+        color.h color.cpp
+        shape_factory.h shape_factory.cpp)
 
 set_property(TARGET terra_eroder PROPERTY CXX_STANDARD 14)
 target_include_directories(terra_eroder PRIVATE
