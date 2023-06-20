@@ -75,8 +75,8 @@ void initGL()
     glad_glEnable(GL_DEPTH_TEST);  // enable depth buffer
     glad_glEnable(GL_CLIP_DISTANCE0);  // clipping distance
     glad_glFrontFace(GL_CCW);  // set ccw mode, useful in particular for culling
-    glad_glEnable(GL_CULL_FACE);
-    glad_glCullFace(GL_BACK);
+    //glad_glEnable(GL_CULL_FACE);
+    //glad_glCullFace(GL_BACK);
     glad_glEnable(GL_BLEND);  // enable transparency
     glad_glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // set blending function
     glad_glBlendEquation(GL_FUNC_ADD);  // set blending reslts mixer function
