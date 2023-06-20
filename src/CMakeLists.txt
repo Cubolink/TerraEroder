@@ -8,6 +8,8 @@ add_subdirectory(renderer)
 
 add_executable(terra_eroder main.cpp
         geometry.h
+        camera.h camera.cpp
+        controller.h controller.cpp
         color.h color.cpp
         shape_factory.h shape_factory.cpp)
 

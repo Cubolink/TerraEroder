@@ -10,3 +10,5 @@ set(THIRD_PARTY_DEPENDENCIES_LIBRARIES glfw glad)
 add_subdirectory(dependencies/glfw)
 add_subdirectory(dependencies/glad)
 add_subdirectory(src)
+
+file(COPY resources DESTINATION ${CMAKE_BINARY_DIR})
