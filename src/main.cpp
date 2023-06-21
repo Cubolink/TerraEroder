@@ -126,7 +126,7 @@ int main() {
     // Init shaders
     Shader c_mpv_shaderProgram = Shader("../resources/shaders/color_mpv_shader.shader");
     Shader t_mpv_shaderProgram = Shader("../resources/shaders/texture_mpv_shader.shader");
-    Shader gouraud_c_shaderProgram = Shader("../resources/shaders/gouraud_color_mpv.shader");
+    Shader gouraud_c_mpv_shaderProgram = Shader("../resources/shaders/gouraud_color_mpv.shader");
     Shader terrain_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_shader.shader");
     // Init texture and shapes
     Texture texture = Texture("../resources/textures/red_yoshi.png");
@@ -187,11 +187,11 @@ int main() {
         c_mpv_shaderProgram.SetUniformMat4f("u_model", model_m);
 
         glm::vec3 cam_pos = camera.getEyeVec3();
-        gouraud_c_shaderProgram.Bind();
-        gouraud_c_shaderProgram.SetUniformMat4f("u_projection", projection_m);
-        gouraud_c_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
-        gouraud_c_shaderProgram.SetUniformMat4f("u_model", model_m);
-        gouraud_c_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
+        gouraud_c_mpv_shaderProgram.Bind();
+        gouraud_c_mpv_shaderProgram.SetUniformMat4f("u_projection", projection_m);
+        gouraud_c_mpv_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
+        gouraud_c_mpv_shaderProgram.SetUniformMat4f("u_model", model_m);
+        gouraud_c_mpv_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
 
         terrain_shaderProgram.Bind();
         terrain_shaderProgram.SetUniformMat4f("u_projection", projection_m);
@@ -203,7 +203,7 @@ int main() {
         terrain_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
 
         renderer.Draw(square_shape, texture, t_mpv_shaderProgram, GL_TRIANGLES);
-        renderer.Draw(normal_color_cube_shape, cube_material, light, gouraud_c_shaderProgram, GL_TRIANGLES);
+        renderer.Draw(normal_color_cube_shape, cube_material, light, gouraud_c_mpv_shaderProgram, GL_TRIANGLES);
         renderer.Draw(axis_shape, texture, c_mpv_shaderProgram, GL_LINES);
         renderer.Draw(terrain, cube_material, light, terrain_shaderProgram, GL_TRIANGLES);
 
