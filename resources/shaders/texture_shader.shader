@@ -10,7 +10,7 @@ void main()
 {
 	gl_Position = position;
 	v_texCoord = texCoord;
-};
+}
 
 #shader fragment
 #version 330 core
