@@ -17,6 +17,12 @@
 
 int w_width = 1024;
 int w_height = 576;
+float w_proportion;
+
+glm::mat4 projection_m;
+glm::vec3 translation;
+glm::mat4 model_m;
+
 CameraController cameraController;
 
 /**
@@ -118,10 +124,10 @@ int main() {
     cameraController.setCamera(&camera);
 
     // Init transformations
-    float w_proportion = ((float) w_height) / ((float) w_width);
-    glm::mat4 projection_m = glm::perspective(glm::radians(50.0f), (float) 1/w_proportion, 0.1f, 100.0f);
-    glm::vec3 translation = glm::vec3(0, 0, -2.f);
-    glm::mat4 model_m = glm::translate(glm::mat4(1.0f), translation);;
+    w_proportion = ((float) w_height) / ((float) w_width);
+    projection_m = glm::perspective(glm::radians(50.0f), (float) 1/w_proportion, 0.1f, 100.0f);
+    translation = glm::vec3(0, 0, -2.f);
+    model_m = glm::translate(glm::mat4(1.0f), translation);
 
     // Init shaders
     Shader c_mpv_shaderProgram = Shader("../resources/shaders/color_mpv_shader.shader");
