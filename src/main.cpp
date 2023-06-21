@@ -25,6 +25,16 @@ glm::mat4 model_m;
 
 CameraController cameraController;
 
+void resize_callback(GLFWwindow* window, int width, int height)
+{
+    w_width = width;
+    w_height = height;
+
+    glViewport(0, 0, width, height);
+    w_proportion = ((float) w_height) / ((float) w_width);
+    projection_m = glm::perspective(glm::radians(50.0f), (float) 1/w_proportion, 0.1f, 100.0f);
+}
+
 /**
  * Handles the glfw key_callback, changing parameters in the cameraController
  * @param window
@@ -110,6 +120,7 @@ int main() {
     glfwMakeContextCurrent(window);
     /*Make a key callback for the window */
     glfwSetKeyCallback(window, key_callback);
+    glfwSetFramebufferSizeCallback(window, resize_callback);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
         return -1;
