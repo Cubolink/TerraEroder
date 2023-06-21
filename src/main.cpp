@@ -12,6 +12,7 @@
 
 #include "renderer/renderer.h"
 #include "shape_factory.h"
+#include "obj_files.h"
 #include "controller.h"
 
 int w_width = 1024;
@@ -84,6 +85,7 @@ void initGL()
 
 
 int main() {
+
     GLFWwindow *window;
 
     /* Initialize the library */
@@ -130,6 +132,7 @@ int main() {
     Shape square_shape = ShapeFactory::createTextureQuad();
     Shape axis_shape = ShapeFactory::createColorAxis(1);
     Shape normal_color_cube_shape = ShapeFactory::createColorNormalCube(.2f, .3f, .7f);
+    Shape terrain = Obj::readFile("../../data/terrain.obj");
     // Init materials
     Material cube_material = Material(0.3f, 0.6f, 0.7f, 100, texture);
     Light light = Light(1.0f, 1.0f, 1.0f, glm::vec3(0, 0, 50),
@@ -176,6 +179,7 @@ int main() {
         renderer.Draw(square_shape, texture, t_mpv_shaderProgram, GL_TRIANGLES);
         renderer.Draw(normal_color_cube_shape, cube_material, light, gouraud_c_shaderProgram, GL_TRIANGLES);
         renderer.Draw(axis_shape, texture, c_mpv_shaderProgram, GL_LINES);
+        renderer.Draw(terrain, cube_material, light, gouraud_c_shaderProgram, GL_TRIANGLES);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
