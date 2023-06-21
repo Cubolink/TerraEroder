@@ -1,5 +1,5 @@
 //
-// Created by major on 19-06-2023.
+// Created by Cubolink on 19-06-2023.
 //
 
 #include <iostream>

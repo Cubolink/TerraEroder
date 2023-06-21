@@ -1,5 +1,5 @@
 //
-// Created by major on 20-06-2023.
+// Created by Cubolink on 20-06-2023.
 //
 #include "color.h"
 
