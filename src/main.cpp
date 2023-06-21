@@ -127,12 +127,29 @@ int main() {
     Shader c_mpv_shaderProgram = Shader("../resources/shaders/color_mpv_shader.shader");
     Shader t_mpv_shaderProgram = Shader("../resources/shaders/texture_mpv_shader.shader");
     Shader gouraud_c_shaderProgram = Shader("../resources/shaders/gouraud_color_mpv.shader");
+    Shader terrain_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_shader.shader");
     // Init texture and shapes
     Texture texture = Texture("../resources/textures/red_yoshi.png");
     Shape square_shape = ShapeFactory::createTextureQuad();
     Shape axis_shape = ShapeFactory::createColorAxis(1);
     Shape normal_color_cube_shape = ShapeFactory::createColorNormalCube(.2f, .3f, .7f);
     Shape terrain = Obj::readFile("../../data/terrain.obj");
+    float terrain_max_z = -std::numeric_limits<float>::infinity();
+    float terrain_min_z = std::numeric_limits<float>::infinity();
+
+    std::vector<float> terrain_vertices = terrain.getVertices();
+    for (int i = 2; i < terrain_vertices.size(); i += 6)
+    {
+        if (terrain_vertices[i] > terrain_max_z)
+            terrain_max_z = terrain_vertices[i];
+        if (terrain_vertices[i] < terrain_min_z)
+            terrain_min_z = terrain_vertices[i];
+    }
+    float terrain_z_range = terrain_max_z - terrain_min_z;
+    float terrain_water_level = terrain_z_range/3 + terrain_min_z;
+    std::cout << "max/min: " << terrain_max_z << "/" << terrain_min_z << std::endl;
+    std::cout << "water_level: " << terrain_water_level;
+
     // Init materials
     Material cube_material = Material(0.3f, 0.6f, 0.7f, 100, texture);
     Light light = Light(1.0f, 1.0f, 1.0f, glm::vec3(0, 0, 50),
@@ -169,17 +186,26 @@ int main() {
         c_mpv_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
         c_mpv_shaderProgram.SetUniformMat4f("u_model", model_m);
 
+        glm::vec3 cam_pos = camera.getEyeVec3();
         gouraud_c_shaderProgram.Bind();
         gouraud_c_shaderProgram.SetUniformMat4f("u_projection", projection_m);
         gouraud_c_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
         gouraud_c_shaderProgram.SetUniformMat4f("u_model", model_m);
-        glm::vec3 cam_pos = camera.getEyeVec3();
         gouraud_c_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
+
+        terrain_shaderProgram.Bind();
+        terrain_shaderProgram.SetUniformMat4f("u_projection", projection_m);
+        terrain_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
+        terrain_shaderProgram.SetUniformMat4f("u_model", model_m);
+        terrain_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
+        terrain_shaderProgram.SetUniform1f("u_waterLevel", terrain_water_level);
+        terrain_shaderProgram.SetUniform1f("u_deepestLevel", terrain_min_z);
+        terrain_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
 
         renderer.Draw(square_shape, texture, t_mpv_shaderProgram, GL_TRIANGLES);
         renderer.Draw(normal_color_cube_shape, cube_material, light, gouraud_c_shaderProgram, GL_TRIANGLES);
         renderer.Draw(axis_shape, texture, c_mpv_shaderProgram, GL_LINES);
-        renderer.Draw(terrain, cube_material, light, gouraud_c_shaderProgram, GL_TRIANGLES);
+        renderer.Draw(terrain, cube_material, light, terrain_shaderProgram, GL_TRIANGLES);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

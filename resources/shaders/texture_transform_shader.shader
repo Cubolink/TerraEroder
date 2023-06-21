@@ -12,7 +12,7 @@ void main()
 {
 	gl_Position = u_MVP * position;
 	v_texCoord = texCoord;
-};
+}
 
 #shader fragment
 #version 330 core
