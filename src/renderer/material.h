@@ -24,7 +24,7 @@ private:
 
 public:
     /**
-     * Sets the different reflection properties of the material.
+     * Sets the different reflection properties of the material, with a texture.
      * @param ambiental
      * @param diffuse
      * @param specular
@@ -32,6 +32,15 @@ public:
      * @param texture
      */
     Material(float ambiental, float diffuse, float specular, unsigned int shininess, Texture &texture);
+
+    /**
+     * Sets the different reflection properties of the material.
+     * @param ambiental
+     * @param diffuse
+     * @param specular
+     * @param shininess
+     */
+    Material(float ambiental, float diffuse, float specular, unsigned int shininess);
 
     /**
      * Caution: The shader has to be already bound

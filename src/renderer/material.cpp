@@ -14,6 +14,16 @@ Material::Material(float ambiental, float diffuse, float specular, unsigned int 
 
 }
 
+Material::Material(float ambiental, float diffuse, float specular, unsigned int shininess)
+: ka(ambiental, ambiental, ambiental),
+  kd(diffuse, diffuse, diffuse),
+  ks(specular, specular, specular),
+  shininess(shininess),
+  texture("")  // empty texture
+{
+
+}
+
 void Material::Bind(Shader &shader) const
 {
     texture.Bind();

@@ -9,6 +9,9 @@ Texture::Texture(const std::string& path)
 	stbi_set_flip_vertically_on_load(true);  // image coords usually set 0,0 at top left, but OpenGL likes bottom left, so we flip vertically on load
 	m_LocalBuffer = stbi_load(path.c_str(), &m_Width, &m_Height, &m_BPP, 4);
 
+    if (!m_LocalBuffer)  // empty texture
+        return;
+
 	GLCall(glGenTextures(1, &m_RendererID));
 	GLCall(glBindTexture(GL_TEXTURE_2D, m_RendererID));
 
@@ -32,14 +35,13 @@ Texture::Texture(const std::string& path)
 	GLCall(glBindTexture(GL_TEXTURE_2D, 0));
 
 	// In our case, we want to release the memory of the image, since it's on gpu now, but we may want to store it for other purposes
-	if (m_LocalBuffer)
-		stbi_image_free(m_LocalBuffer);
+	stbi_image_free(m_LocalBuffer);
 
 }
 
 Texture::~Texture()
 {
-	stbi_image_free(m_LocalBuffer);
+	// stbi_image_free(m_LocalBuffer);  // already freed in the constructor
 	GLCall(glDeleteTextures(1, &m_RendererID));
 }
 

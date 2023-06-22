@@ -168,7 +168,7 @@ int main() {
     std::cout << "water_level: " << terrain_water_level;
 
     // Init materials
-    Material cube_material = Material(0.3f, 0.6f, 0.7f, 100, texture);
+    Material cube_material = Material(0.3f, 0.6f, 0.7f, 100);
     Light light = Light(1.0f, 1.0f, 1.0f, glm::vec3(0, 0, 50),
                         0.01f, 0.01f, 0.0001f);
 
