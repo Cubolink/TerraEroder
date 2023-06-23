@@ -18,6 +18,8 @@ public:
 	void Bind() const;
 	void Unbind() const;
 
+    unsigned int getGLBufferID();
+
     /**
      * Updates the vertices of the vertex buffer
      * @param data

@@ -22,9 +22,11 @@ private:
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
     VertexArray vao;
-    VertexBuffer vbo;
     VertexBufferLayout vbl;
     IndexBuffer ibo;
+
+protected:
+    VertexBuffer vbo;
 
 public:
     Shape(std::vector<float> vertices, std::vector<unsigned int> indices, const std::vector<int>& count_layouts);

@@ -1,5 +1,15 @@
-cmake_minimum_required(VERSION 3.15)
-project(terraeroder C CXX CUDA)
+cmake_minimum_required(VERSION 3.20)
+project(terraeroder C CXX)
+
+find_package(CUDA)
+if(CUDA_FOUND)
+	enable_language(CUDA)
+	set(CMAKE_CUDA_STANDARD 14)
+	set(USE_CUDA ON)
+	# set(CUDA_SEPARABLE_COMPILATION ON)
+else()
+	set(USE_CUDA OFF)
+endif()
 
 add_definitions(-D_USE_MATH_DEFINES)
 

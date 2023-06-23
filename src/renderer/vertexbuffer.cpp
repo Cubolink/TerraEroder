@@ -41,6 +41,10 @@ void VertexBuffer::Unbind() const
     GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
 }
 
+unsigned int VertexBuffer::getGLBufferID() {
+    return m_RendererID;
+}
+
 void VertexBuffer::updateData(std::vector<float> &data) {
     GLCall(glBindBuffer(GL_ARRAY_BUFFER, m_RendererID));
     GLCall(glBufferData(GL_ARRAY_BUFFER, (int) (data.size() * sizeof(float)), data.data(), GL_DYNAMIC_DRAW));
