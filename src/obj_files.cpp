@@ -36,7 +36,6 @@ Shape Obj::readFile(const std::string &filepath) {
 
     std::vector<float> vertices;  // vx, vy, vz
     std::vector<float> normals;  // vnx, vny, vnz
-    std::vector<float> colors;
     std::vector<unsigned int> indices;
 
     std::string line;
