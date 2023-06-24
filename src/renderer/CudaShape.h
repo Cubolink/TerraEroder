@@ -10,7 +10,7 @@
 
 #include <utility>
 
-class CudaShape : Shape {
+class CudaShape : public Shape {
 private:
     cudaGraphicsResource *cudaVBOResource;
 public:
