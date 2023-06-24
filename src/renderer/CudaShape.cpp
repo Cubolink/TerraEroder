@@ -28,3 +28,7 @@ void CudaShape::cudaUnmap()
 {
     cudaGraphicsUnmapResources(1, &cudaVBOResource, nullptr);
 }
+
+CudaShape::~CudaShape() {
+    cudaGraphicsUnregisterResource(cudaVBOResource);
+}

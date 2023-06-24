@@ -21,6 +21,8 @@ public:
     void cudaMap(float4 *devicePointer, size_t *numBytes);
 
     void cudaUnmap();
+
+    ~CudaShape();
 };
 
 

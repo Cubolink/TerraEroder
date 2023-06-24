@@ -21,9 +21,7 @@ Shape::Shape(const std::vector<float>& vertices, const std::vector<unsigned int>
 }
 
 Shape::~Shape()
-{
-
-}
+= default;
 
 void Shape::Bind() const
 {
