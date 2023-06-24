@@ -18,7 +18,7 @@ public:
 
     explicit CudaShape(const Shape& shape);
 
-    void cudaMap(float4 *devicePointer, size_t *numBytes);
+    void cudaMap(float **devicePointer, size_t *numBytes);
 
     void cudaUnmap();
 

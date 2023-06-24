@@ -18,10 +18,10 @@ CudaShape::CudaShape(const Shape& shape)
     cudaGraphicsGLRegisterBuffer(&cudaVBOResource, vbo.getGLBufferID(), cudaGraphicsMapFlagsWriteDiscard);
 }
 
-void CudaShape::cudaMap(float4 *devicePointer, size_t *numBytes)
+void CudaShape::cudaMap(float **devicePointer, size_t *numBytes)
 {
     cudaGraphicsMapResources(1, &cudaVBOResource, nullptr);
-    cudaGraphicsResourceGetMappedPointer((void**) &devicePointer, numBytes, cudaVBOResource);
+    cudaGraphicsResourceGetMappedPointer((void**) devicePointer, numBytes, cudaVBOResource);
 }
 
 void CudaShape::cudaUnmap()
