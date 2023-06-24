@@ -14,7 +14,9 @@ class CudaShape : public Shape {
 private:
     cudaGraphicsResource *cudaVBOResource;
 public:
-    CudaShape(std::vector<float> vertices, std::vector<unsigned int> indices, const std::vector<int>& count_layouts);
+    CudaShape(const std::vector<float> &vertices, const std::vector<unsigned int> &indices, const std::vector<int>& count_layouts);
+
+    explicit CudaShape(const Shape& shape);
 
     void cudaMap(float4 *devicePointer, size_t *numBytes);
 

@@ -20,7 +20,7 @@ public:
      * @param data Pointer to the index data array, which contains the indices.
      * @param count Number of indices in the index data.
      */
-	explicit IndexBuffer(std::vector<unsigned int> &data);
+	explicit IndexBuffer(const std::vector<unsigned int> &data);
 
     /**
      * Destructor of IndexBuffer.

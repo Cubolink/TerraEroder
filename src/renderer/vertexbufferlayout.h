@@ -49,6 +49,8 @@ public:
 	VertexBufferLayout()
 		: m_Stride(0) {}
 
+    VertexBufferLayout(const VertexBufferLayout &vbl) = default;
+
 	template<typename T>
 	/**
 	* Adds `count` elements to the layout.

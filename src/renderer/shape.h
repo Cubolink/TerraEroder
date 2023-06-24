@@ -29,7 +29,8 @@ protected:
     VertexBuffer vbo;
 
 public:
-    Shape(std::vector<float> vertices, std::vector<unsigned int> indices, const std::vector<int>& count_layouts);
+    Shape(Shape const &shape);
+    Shape(const std::vector<float>& vertices, const std::vector<unsigned int> &indices, const std::vector<int>& count_layouts);
     ~Shape();
     void Bind() const;
 

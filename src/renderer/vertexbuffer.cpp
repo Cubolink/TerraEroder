@@ -9,7 +9,7 @@
 * @param data Pointer to the index data array, which contains the indices.
 * @param size Size (in bytes) of the index data.
 */
-VertexBuffer::VertexBuffer(std::vector<float> &data)
+VertexBuffer::VertexBuffer(const std::vector<float> &data)
 {
     GLCall(glGenBuffers(1, &m_RendererID));  // Tells GL to generate 1 Buffer, and store its id in m_RendererID.
     GLCall(glBindBuffer(GL_ARRAY_BUFFER, m_RendererID));  // Binds an Array Buffer to the generated buffer.

@@ -3,7 +3,7 @@
 #include "glerrorhandler.h"
 
 
-IndexBuffer::IndexBuffer(std::vector<unsigned int> &data)
+IndexBuffer::IndexBuffer(const std::vector<unsigned int> &data)
 	: m_Count(data.size())
 {
 	ASSERT(sizeof(unsigned int) == sizeof(GLuint));

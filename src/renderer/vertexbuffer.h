@@ -12,7 +12,7 @@ class VertexBuffer
 private:
 	unsigned int m_RendererID;  // ID of the GL buffer generated
 public:
-	explicit VertexBuffer(std::vector<float> &data);
+	explicit VertexBuffer(const std::vector<float> &data);
 	~VertexBuffer();
 
 	void Bind() const;

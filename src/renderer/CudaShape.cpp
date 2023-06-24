@@ -4,9 +4,16 @@
 
 #include "CudaShape.h"
 
-CudaShape::CudaShape(std::vector<float> vertices, std::vector<unsigned int> indices,
+CudaShape::CudaShape(const std::vector<float> &vertices, const std::vector<unsigned int> &indices,
                      const std::vector<int> &count_layouts)
-: Shape(std::move(vertices), std::move(indices), count_layouts), cudaVBOResource(nullptr)
+: Shape(vertices, indices, count_layouts), cudaVBOResource(nullptr)
+{
+    cudaGraphicsGLRegisterBuffer(&cudaVBOResource, vbo.getGLBufferID(), cudaGraphicsMapFlagsWriteDiscard);
+}
+
+
+CudaShape::CudaShape(const Shape& shape)
+: Shape(shape), cudaVBOResource(nullptr)
 {
     cudaGraphicsGLRegisterBuffer(&cudaVBOResource, vbo.getGLBufferID(), cudaGraphicsMapFlagsWriteDiscard);
 }
