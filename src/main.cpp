@@ -34,12 +34,11 @@ CameraController cameraController;
 std::vector<float> terrain_vertices;
 std::vector<std::vector<float>> heightMap;
 
-cudaGraphicsResource_t cudaVBOResource;
 unsigned int cudaNumBlocks;
 unsigned int cudaNumBodies;
 dim3 cudaBlockSize;
 dim3 cudaGridSize;
-float* cudaHeightMap;
+// float* cudaHeightMap;
 
 void resize_callback(GLFWwindow* window, int width, int height)
 {
@@ -120,10 +119,9 @@ void createTerrainHeightMap()
     heightMap = std::vector<std::vector<float>>(m, std::vector<float>(n));
     // x from 0 to m
     // y from 0 to n
-    // matrix goes like
-    //  x y->
-    //  |
-    // \|/
+    // matrix goes like      x y->
+    //                       |
+    //                      \|/
     for (unsigned int x = 0; x < m; x++)
     {
         for (unsigned int y = 0; y < n; y++)
@@ -161,9 +159,6 @@ void initCUDA() {
     unsigned int m = heightMap.size();
     unsigned int n = heightMap[0].size();
 
-    //cudaNumBlocks = (m*n + 256 - 1) / 256;
-    //cudaNumBodies = cudaNumBlocks * 256;
-
     cudaBlockSize.x = 16;
     cudaBlockSize.y = 16;
 
@@ -177,7 +172,8 @@ void initCUDA() {
     cudaNumBlocks = (cudaGridSize.x * cudaGridSize.y);
     cudaNumBodies = (cudaBlockSize.x * cudaBlockSize.x) * cudaNumBlocks;  // this > m*n if there was any padding
 
-    /*std::vector<float> planeHeightMap;
+    /*
+    std::vector<float> planeHeightMap;
     for (unsigned int x = 0; x < m; x++)
     {
         unsigned int cudaN = cudaGridSize.x * cudaBlockSize.x;
@@ -189,6 +185,8 @@ void initCUDA() {
     }
     planeHeightMap.resize(cudaNumBodies);
      */
+    /*
+    // Initialize a matrix un CUDA
     unsigned int cudaM = cudaGridSize.x * cudaBlockSize.x;
     unsigned int cudaN = cudaGridSize.y * cudaBlockSize.y;
 
@@ -218,6 +216,7 @@ void initCUDA() {
         delete[] planeHeightMap[x];
     }
     delete[] planeHeightMap;
+    */
 }
 
 
