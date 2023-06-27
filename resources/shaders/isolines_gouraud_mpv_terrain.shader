@@ -7,8 +7,6 @@ layout(location = 1) in vec3 normal;
 out vec4 vertexColor;
 
 uniform mat4 u_model;
-uniform mat4 u_view;
-uniform mat4 u_projection;
 
 uniform vec3 u_lightPosition;
 uniform vec3 u_viewPosition;
@@ -66,8 +64,8 @@ vec3 hsv_to_rgb(vec3 hsv_color) {
 
 void main()
 {
-    vec3 vertexPos = vec3(u_model * vec4(position, 1.0));
-    gl_Position = u_projection * u_view * vec4(vertexPos, 1.0);
+    vec3 vertexPos = vec3(u_model * vec4(position, 1.0));  // illumination computation needs the u_model transformation
+    gl_Position = vec4(position, 1.0);  // geometry shader will work with the original position
 
     // ambient
     vec3 ambient = u_Ka * u_La;
@@ -115,10 +113,15 @@ layout(location = 0) in vec4 vertexColor[];
 
 out vec4 interpolatedColor;
 
+uniform mat4 u_model;
+uniform mat4 u_view;
+uniform mat4 u_projection;
+
+
 void main() {
     for (int i = 0; i < gl_in.length(); i++)
     {
-        gl_Position = gl_in[i].gl_Position;
+        gl_Position = u_projection * u_view * u_model * gl_in[i].gl_Position;
         interpolatedColor = vec4(vertexColor[i]);
         EmitVertex();
     }
