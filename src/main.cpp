@@ -324,7 +324,7 @@ int main() {
         dt = t1 - t0;
         t0 = t1;
 
-        updateModel(terrain, t1);
+        //updateModel(terrain, t1);
 
         renderer.Clear();
 
