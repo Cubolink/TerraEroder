@@ -107,7 +107,7 @@ void main()
 #version 330 core
 
 layout(triangles) in;
-layout(triangle_strip, max_vertices=3) out;
+layout(line_strip, max_vertices=40) out;
 
 layout(location = 0) in vec4 vertexColor[];
 
@@ -117,16 +117,103 @@ uniform mat4 u_model;
 uniform mat4 u_view;
 uniform mat4 u_projection;
 
+uniform float u_deepestLevel;
+uniform float u_levelRange;
+
+vec4 interpolate(vec4 A, vec4 B, float lambda)
+{
+    return A + lambda*(B - A);
+}
+
+#define A gl_in[0].gl_Position
+#define B gl_in[1].gl_Position
+#define C gl_in[2].gl_Position
+#define colorA vec4(vertexColor[0])
+#define colorB vec4(vertexColor[1])
+#define colorC vec4(vertexColor[2])
+
 
 void main() {
-    for (int i = 0; i < gl_in.length(); i++)
-    {
-        gl_Position = u_projection * u_view * u_model * gl_in[i].gl_Position;
-        interpolatedColor = vec4(vertexColor[i]);
-        EmitVertex();
-    }
 
-    EndPrimitive();
+    int u_nIsolines = 20;
+    for (int kIsoline = 0; kIsoline < u_nIsolines; kIsoline++)
+    {
+        // Find the two points where the triangle intersect the isoline, if any.
+        float isolineZLevel = u_deepestLevel + u_levelRange * float(kIsoline) / u_nIsolines;
+
+        // Check if AB, BC or CA are parallel to the isolineZLevel. If true, both extrems will form the primitive
+        if ((B.z - A.z == 0) && A.z == isolineZLevel)
+        {
+            gl_Position = u_projection * u_view * u_model * A; interpolatedColor = colorA;
+            EmitVertex();
+            gl_Position = u_projection * u_view * u_model * B; interpolatedColor = colorB;
+            EmitVertex();
+            EndPrimitive();
+            continue;
+        } else if ((C.z - B.z == 0) && B.z == isolineZLevel)
+        {
+            gl_Position = u_projection * u_view * u_model * B; interpolatedColor = colorB;
+            EmitVertex();
+            gl_Position = u_projection * u_view * u_model * C; interpolatedColor = colorC;
+            EmitVertex();
+            EndPrimitive();
+            continue;
+        } else if ((A.z - C.z == 0 && C.z == isolineZLevel))
+        {
+            gl_Position = u_projection * u_view * u_model * C; interpolatedColor = colorC;
+            EmitVertex();
+            gl_Position = u_projection * u_view * u_model * A; interpolatedColor = colorA;
+            EmitVertex();
+            EndPrimitive();
+            continue;
+        }
+        // Check intersections
+
+        int nVerticesFound = 0;
+        // Check the intersection for AB
+        {
+            float lambda = (isolineZLevel - A.z) / (B.z - A.z);
+            if (0.f <= lambda && lambda <= 1.f)
+            {
+                gl_Position = u_projection * u_view * u_model * interpolate(A, B, lambda);
+                interpolatedColor = interpolate(colorA, colorB, lambda);
+                EmitVertex();
+                nVerticesFound++;
+            }
+        }
+        // Check the intersection for BC
+        {
+            float lambda = (isolineZLevel - B.z) / (C.z - B.z);
+            if (0.f <= lambda && lambda <= 1.f)
+            {
+                gl_Position = u_projection * u_view * u_model * interpolate(B, C, lambda);
+                interpolatedColor = interpolate(colorB, colorC, lambda);
+                EmitVertex();
+                nVerticesFound++;
+            }
+        }
+        // Check the intersection for CA
+        {
+            float lambda = (isolineZLevel - C.z) / (A.z - C.z);
+            if (0.f <= lambda && lambda <= 1.f)
+            {
+                gl_Position = u_projection * u_view * u_model * interpolate(C, A, lambda);
+                interpolatedColor = interpolate(colorC, colorA, lambda);
+                EmitVertex();
+                nVerticesFound++;
+            }
+        }
+        if (nVerticesFound == 2)
+            EndPrimitive();
+        else if (nVerticesFound != 0)  // Debugging purposes (should not happen)
+        {
+            // Create a long line into below of the object.
+            gl_Position = u_projection * u_view * u_model * vec4(0.f, 0.f, u_deepestLevel -10.f, 1.f);
+            interpolatedColor = vec4(0.f, 0.f, 0.f, 1.f);
+            EmitVertex();
+            EndPrimitive();
+        }
+    }
 }
 
 #shader fragment
