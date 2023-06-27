@@ -32,3 +32,9 @@ target_link_libraries(terra_eroder PRIVATE
         ${THIRD_PARTY_VENDOR_LIBRARIES}
         ${FIRST_PARTY_LIBRARIES}
         )
+
+add_custom_command(
+        TARGET terra_eroder PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources ${CMAKE_BINARY_DIR}/resources
+        COMMENT "Copying resources into the build folder"
+)
