@@ -280,6 +280,7 @@ int main() {
     Shader t_mpv_shaderProgram = Shader("../resources/shaders/texture_mpv_shader.shader");
     Shader gouraud_c_mpv_shaderProgram = Shader("../resources/shaders/gouraud_color_mpv.shader");
     Shader terrain_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_shader.shader");
+    Shader isolines_shaderProgram = Shader("../resources/shaders/isolines_gouraud_mpv_terrain.shader");
     // Init texture and shapes
     Texture texture = Texture("../resources/textures/red_yoshi.png");
     Shape square_shape = ShapeFactory::createTextureQuad();
@@ -348,7 +349,7 @@ int main() {
         gouraud_c_mpv_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
         gouraud_c_mpv_shaderProgram.SetUniformMat4f("u_model", model_m);
         gouraud_c_mpv_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
-
+/*
         terrain_shaderProgram.Bind();
         terrain_shaderProgram.SetUniformMat4f("u_projection", projection_m);
         terrain_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
@@ -356,12 +357,21 @@ int main() {
         terrain_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
         terrain_shaderProgram.SetUniform1f("u_waterLevel", terrain_water_level);
         terrain_shaderProgram.SetUniform1f("u_deepestLevel", terrain_min_z);
-        terrain_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
+        terrain_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);*/
+
+        isolines_shaderProgram.Bind();
+        isolines_shaderProgram.SetUniformMat4f("u_projection", projection_m);
+        isolines_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
+        isolines_shaderProgram.SetUniformMat4f("u_model", model_m);
+        isolines_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
+        isolines_shaderProgram.SetUniform1f("u_waterLevel", terrain_water_level);
+        isolines_shaderProgram.SetUniform1f("u_deepestLevel", terrain_min_z);
+        isolines_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
 
         renderer.Draw(square_shape, texture, t_mpv_shaderProgram, GL_TRIANGLES);
         renderer.Draw(normal_color_cube_shape, cube_material, light, gouraud_c_mpv_shaderProgram, GL_TRIANGLES);
         renderer.Draw(axis_shape, texture, c_mpv_shaderProgram, GL_LINES);
-        renderer.Draw(terrain, cube_material, light, terrain_shaderProgram, GL_TRIANGLES);
+        renderer.Draw(terrain, cube_material, light, isolines_shaderProgram, GL_TRIANGLES);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
