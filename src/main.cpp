@@ -222,6 +222,7 @@ void initCUDA() {
 
 void updateModel(CudaShape& terrain, double t)
 {
+    glad_glFinish();
     float *dPtr = nullptr;
     size_t numBytes;
     terrain.cudaMap(&dPtr, &numBytes);
