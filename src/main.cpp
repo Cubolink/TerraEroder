@@ -357,6 +357,8 @@ int main() {
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init();
+    const char* shaderSelectorOptions[] = {"Colored terrain", "Gray terrain + colored contour lines", "Terrain triangle lines"};
+    static int currentShaderIndex = 0;
 
     double t0 = glfwGetTime();
     double t1, dt;
@@ -439,11 +441,18 @@ int main() {
         {
             renderer.Draw(terrain, cube_material, light, isolines_shaderProgram, GL_TRIANGLES);
             renderer.Draw(terrain, cube_material, light, grayTerrain_shaderProgram, GL_TRIANGLES);
+            currentShaderIndex = 1;
         }
         else if (displayController.displayTriangles())
+        {
             renderer.Draw(terrain, cube_material, light, terrainLines_shaderProgram, GL_TRIANGLES);
+            currentShaderIndex = 2;
+        }
         else
+        {
             renderer.Draw(terrain, cube_material, light, terrain_shaderProgram, GL_TRIANGLES);
+            currentShaderIndex = 0;
+        }
 
         ImGui::Begin("Variables");
 
@@ -462,8 +471,21 @@ int main() {
 
         ImGui::Text("\nRenderer");
         ImGui::Text("  CONTROLS:");
-        ImGui::Text("  * TAB to toggle shader \n"
-                    "    [colored terrain | terrain triangle lines | gray terrain + colored contour lines]");
+        ImGui::Text("  * TAB to toggle shader or choose below \n");
+        {
+            ImGui::Combo("shader", &currentShaderIndex, shaderSelectorOptions, IM_ARRAYSIZE(shaderSelectorOptions));
+            switch (currentShaderIndex) {
+                case 1:
+                    displayController.switchToContourCurves();
+                    break;
+                case 2:
+                    displayController.switchToTriangleLines();
+                    break;
+                default:
+                    displayController.switchToDefaultDisplay();
+                    break;
+            }
+        }
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();

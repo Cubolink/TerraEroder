@@ -17,6 +17,12 @@ public:
 
     void toggleDisplay();
 
+    void switchToContourCurves();
+
+    void switchToTriangleLines();
+
+    void switchToDefaultDisplay();
+
     bool displayContourCurves() const;
 
     bool displayTriangles() const;
