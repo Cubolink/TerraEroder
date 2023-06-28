@@ -38,6 +38,19 @@ DisplayController displayController;
 
 std::vector<float> terrain_vertices;
 std::vector<std::vector<float>> heightMap;
+struct BoundingBox {
+    float min_x, min_y, min_z;
+    float max_x, max_y, max_z;
+
+    BoundingBox()
+    : min_x(std::numeric_limits<float>::infinity()),
+    min_y(std::numeric_limits<float>::infinity()),
+    min_z(std::numeric_limits<float>::infinity()),
+    max_x(-std::numeric_limits<float>::infinity()),
+    max_y(-std::numeric_limits<float>::infinity()),
+    max_z(-std::numeric_limits<float>::infinity())
+    {}
+};
 
 unsigned int cudaNumBlocks;
 unsigned int cudaNumBodies;
@@ -300,27 +313,40 @@ int main() {
     Shape axis_shape = ShapeFactory::createColorAxis(1);
     Shape normal_color_cube_shape = ShapeFactory::createColorNormalCube(.2f, .3f, .7f);
     CudaShape terrain(Obj::readFile("../../data/terrain.obj"));
-    float terrain_max_z = -std::numeric_limits<float>::infinity();
-    float terrain_min_z = std::numeric_limits<float>::infinity();
+    BoundingBox terrainBB;
 
     terrain_vertices = terrain.getVertices();
     createTerrainHeightMap();
     initCUDA();
-    for (int i = 2; i < terrain_vertices.size(); i += 6)
+    for (int i = 0; i < terrain_vertices.size(); i += 6)
     {
-        if (terrain_vertices[i] > terrain_max_z)
-            terrain_max_z = terrain_vertices[i];
-        if (terrain_vertices[i] < terrain_min_z)
-            terrain_min_z = terrain_vertices[i];
+        if (terrain_vertices[i] > terrainBB.max_x)
+            terrainBB.max_x = terrain_vertices[i];
+        if (terrain_vertices[i] < terrainBB.min_x)
+            terrainBB.min_x = terrain_vertices[i];
+        if (terrain_vertices[i+1] > terrainBB.max_y)
+            terrainBB.max_y = terrain_vertices[i+1];
+        if (terrain_vertices[i+1] < terrainBB.min_y)
+            terrainBB.min_y = terrain_vertices[i+1];
+        if (terrain_vertices[i+2] > terrainBB.max_z)
+            terrainBB.max_z = terrain_vertices[i+2];
+        if (terrain_vertices[i+2] < terrainBB.min_z)
+            terrainBB.min_z = terrain_vertices[i+2];
     }
-    float terrain_z_range = terrain_max_z - terrain_min_z;
-    float terrain_water_level = terrain_z_range/3 + terrain_min_z;
-    std::cout << "max/min: " << terrain_max_z << "/" << terrain_min_z << std::endl;
+    float terrain_z_range = terrainBB.max_z - terrainBB.min_z;
+    float terrain_water_level = terrain_z_range/3 + terrainBB.min_z;
+    std::cout << "min/max (x, y, z): ("
+            << terrainBB.min_x << "->" << terrainBB.max_x << ", "
+            << terrainBB.min_y << "->" << terrainBB.max_y << ", "
+            << terrainBB.min_z << "->" << terrainBB.max_z << ")"
+            << std::endl;
     std::cout << "water_level: " << terrain_water_level;
 
     // Init materials
     Material cube_material = Material(0.5f, 0.6f, 0.4f, 100);
-    glm::vec3 lightPos(0, 0, 50);
+    glm::vec3 lightPos((terrainBB.min_x+terrainBB.max_x)/2,
+                       (terrainBB.min_y+terrainBB.max_y)/2,
+                       terrainBB.max_z+45);
     Light light = Light(1.0f, 1.0f, 1.0f, lightPos,
                         0.01f, 0.01f, 0.0001f);
 
@@ -378,7 +404,7 @@ int main() {
         terrain_shaderProgram.SetUniformMat4f("u_model", model_m);
         terrain_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
         terrain_shaderProgram.SetUniform1f("u_waterLevel", terrain_water_level);
-        terrain_shaderProgram.SetUniform1f("u_deepestLevel", terrain_min_z);
+        terrain_shaderProgram.SetUniform1f("u_deepestLevel", terrainBB.min_z);
         terrain_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
 
         terrainLines_shaderProgram.Bind();
@@ -387,7 +413,7 @@ int main() {
         terrainLines_shaderProgram.SetUniformMat4f("u_model", model_m);
         terrainLines_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
         terrainLines_shaderProgram.SetUniform1f("u_waterLevel", terrain_water_level);
-        terrainLines_shaderProgram.SetUniform1f("u_deepestLevel", terrain_min_z);
+        terrainLines_shaderProgram.SetUniform1f("u_deepestLevel", terrainBB.min_z);
         terrainLines_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
 
         grayTerrain_shaderProgram.Bind();
@@ -403,7 +429,7 @@ int main() {
         isolines_shaderProgram.SetUniformMat4f("u_model", model_m);
         isolines_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
         isolines_shaderProgram.SetUniform1f("u_waterLevel", terrain_water_level);
-        isolines_shaderProgram.SetUniform1f("u_deepestLevel", terrain_min_z);
+        isolines_shaderProgram.SetUniform1f("u_deepestLevel", terrainBB.min_z);
         isolines_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
 
         renderer.Draw(square_shape, texture, t_mpv_shaderProgram, GL_TRIANGLES);
