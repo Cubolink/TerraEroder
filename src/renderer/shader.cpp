@@ -13,7 +13,7 @@ Shader::Shader(const std::string& filepath)
 	: m_FilePath(filepath), m_RendererID(0)
 {
     ShaderProgramSource source = ParseShaderSrcFile(filepath);
-    m_RendererID = CreateShader(source.VertexSource, source.FragmentSource);
+    m_RendererID = CreateShader(source.VertexSource, source.GeometrySource, source.FragmentSource);
 
 }
 
@@ -27,11 +27,14 @@ ShaderProgramSource Shader::ParseShaderSrcFile(const std::string& filepath)
 {
     enum class ShaderType
     {
-        NONE = -1, VERTEX = 0, FRAGMENT = 1
+        NONE = -1,
+        VERTEX = 0,
+        GEOMETRY = 1,
+        FRAGMENT = 2
     };
     std::ifstream stream(filepath);
     std::string line;
-    std::stringstream ss[2];  // for vertex and shader strings
+    std::stringstream ss[3];  // for vertex, geometry and fragment shader strings
     ShaderType type = ShaderType::NONE;
 
     while (getline(stream, line))
@@ -39,26 +42,29 @@ ShaderProgramSource Shader::ParseShaderSrcFile(const std::string& filepath)
         if (line.find("#shader") != std::string::npos)
         {
             if (line.find("vertex") != std::string::npos)
-            {
                 type = ShaderType::VERTEX;
-            }
+            else if (line.find("geometry") != std::string::npos)
+                type = ShaderType::GEOMETRY;
             else if (line.find("fragment") != std::string::npos)
-            {
                 type = ShaderType::FRAGMENT;
-            }
         }
-        else
+        else if (type != ShaderType::NONE)
         {
-            ss[(int)type] << line << '\n';
+            ss[(int) type] << line << '\n';
         }
 
     }
-    return { ss[0].str(), ss[1].str() };
+    return { ss[0].str(), ss[1].str(), ss[2].str() };
 }
 
 
 unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
 {
+    if (source.empty())
+    {
+        std::cout << "Skipped compilation of empty shader" << std::endl;
+        return 0;
+    }
     unsigned int id = glCreateShader(type);
     const char* src = source.c_str();  // <=> &source[0]
     glShaderSource(id, // associate the id of the shader created
@@ -77,9 +83,22 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
         // char errorMessage[length] doesn't work because length is not a constant, c++ things
         char* errorMessage = (char*)alloca(length * sizeof(char));  // alloc is like malloc, but on the stack and not the heap, we don't need to free like with malloc
         glGetShaderInfoLog(id, length, &length, errorMessage);
-        std::cout << "Failed to compile " <<
-            (type == GL_VERTEX_SHADER ? "vertex" : "fragment")  // works because we only have vertex and fragment shaders, but is not the perfect way
-            << " shader." << std::endl;
+        std::cout << "Failed to compile ";
+        switch (type) {
+            case GL_VERTEX_SHADER:
+                std::cout << "vertex";
+                break;
+            case GL_GEOMETRY_SHADER:
+                std::cout << "geometry";
+                break;
+            case GL_FRAGMENT_SHADER:
+                std::cout << "fragment";
+                break;
+            default:
+                std::cout << "unknown type";
+                break;
+        }
+        std::cout << " shader." << std::endl;
         std::cout << errorMessage << std::endl;
         glDeleteShader(id);
 
@@ -93,15 +112,18 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
 }
 
 
-unsigned int Shader::CreateShader(const std::string& vertexShader, const std::string& fragmentShader)
+unsigned int Shader::CreateShader(const std::string& vertexShader, const std::string& geometryShader, const std::string& fragmentShader)
 {
     unsigned int program = glCreateProgram();  // tell gl we want to create a program that will be attached to our shaders
-    // then we compile the shaders we're going to attach
+    // then we compile and attach the shaders
     unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
+    unsigned int gs = CompileShader(GL_GEOMETRY_SHADER, geometryShader);
     unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
     // and then we attach them to the program
     glAttachShader(program, vs);
+    glAttachShader(program, gs);
     glAttachShader(program, fs);
+
     glLinkProgram(program);
     glValidateProgram(program);
 
@@ -113,6 +135,7 @@ unsigned int Shader::CreateShader(const std::string& vertexShader, const std::st
     */ // but we aren't going to detach them. We should do it, but the gaining is minimum and it seems to complicate debugging.
 
     glDeleteShader(vs);  // the shaders are linked, they are part of the program now, we don't need them anymore
+    glDeleteShader(gs);
     glDeleteShader(fs);
 
     return program;

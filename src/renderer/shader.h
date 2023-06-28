@@ -8,6 +8,7 @@
 struct ShaderProgramSource
 {
 	std::string VertexSource;
+    std::string GeometrySource;
 	std::string FragmentSource;
 };
 
@@ -56,7 +57,7 @@ private:
      * @param vertexShader Source code of the vertex shader
      * @param fragmentShader Source code of the fragment shader
      */
-	unsigned int CreateShader(const std::string& vertexShader, const std::string& fragmentShader);
+	unsigned int CreateShader(const std::string& vertexShader, const std::string& geometryShader, const std::string& fragmentShader);
 
     /**
      * Gets the location of a uniform in the shader

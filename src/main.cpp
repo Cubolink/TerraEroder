@@ -15,6 +15,7 @@
 #include "renderer/CudaShape.h"
 #include "obj_files.h"
 #include "controller.h"
+#include "display_controller.h"
 
 // CUDA kernel interface
 extern "C"
@@ -30,6 +31,7 @@ glm::vec3 translation;
 glm::mat4 model_m;
 
 CameraController cameraController;
+DisplayController displayController;
 
 std::vector<float> terrain_vertices;
 std::vector<std::vector<float>> heightMap;
@@ -93,6 +95,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         case GLFW_KEY_DOWN:
             cameraController.rot_down = (action == GLFW_PRESS || action == GLFW_REPEAT) ? 1: 0;
             break;
+
+        case GLFW_KEY_TAB:
+            if (action == GLFW_PRESS)
+                displayController.toggleDisplay();
 
         default:
             break;
@@ -281,6 +287,10 @@ int main() {
     Shader t_mpv_shaderProgram = Shader("../resources/shaders/texture_mpv_shader.shader");
     Shader gouraud_c_mpv_shaderProgram = Shader("../resources/shaders/gouraud_color_mpv.shader");
     Shader terrain_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_shader.shader");
+    Shader terrainLines_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_trianglelines.shader");
+    Shader grayTerrain_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_single_color.shader");
+    Shader isolines_shaderProgram = Shader("../resources/shaders/isolines_gouraud_mpv_terrain.shader");
+
     // Init texture and shapes
     Texture texture = Texture("../resources/textures/red_yoshi.png");
     Shape square_shape = ShapeFactory::createTextureQuad();
@@ -325,7 +335,7 @@ int main() {
         dt = t1 - t0;
         t0 = t1;
 
-        updateModel(terrain, t1);
+        //updateModel(terrain, t1);
 
         renderer.Clear();
 
@@ -359,10 +369,45 @@ int main() {
         terrain_shaderProgram.SetUniform1f("u_deepestLevel", terrain_min_z);
         terrain_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
 
+        terrainLines_shaderProgram.Bind();
+        terrainLines_shaderProgram.SetUniformMat4f("u_projection", projection_m);
+        terrainLines_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
+        terrainLines_shaderProgram.SetUniformMat4f("u_model", model_m);
+        terrainLines_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
+        terrainLines_shaderProgram.SetUniform1f("u_waterLevel", terrain_water_level);
+        terrainLines_shaderProgram.SetUniform1f("u_deepestLevel", terrain_min_z);
+        terrainLines_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
+
+        grayTerrain_shaderProgram.Bind();
+        grayTerrain_shaderProgram.SetUniformMat4f("u_projection", projection_m);
+        grayTerrain_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
+        grayTerrain_shaderProgram.SetUniformMat4f("u_model", model_m);
+        grayTerrain_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
+        grayTerrain_shaderProgram.SetUniform3f("color", 0.5f, 0.5f, 0.5f);
+
+        isolines_shaderProgram.Bind();
+        isolines_shaderProgram.SetUniformMat4f("u_projection", projection_m);
+        isolines_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
+        isolines_shaderProgram.SetUniformMat4f("u_model", model_m);
+        isolines_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
+        isolines_shaderProgram.SetUniform1f("u_waterLevel", terrain_water_level);
+        isolines_shaderProgram.SetUniform1f("u_deepestLevel", terrain_min_z);
+        isolines_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
+
         renderer.Draw(square_shape, texture, t_mpv_shaderProgram, GL_TRIANGLES);
         renderer.Draw(normal_color_cube_shape, cube_material, light, gouraud_c_mpv_shaderProgram, GL_TRIANGLES);
         renderer.Draw(axis_shape, texture, c_mpv_shaderProgram, GL_LINES);
-        renderer.Draw(terrain, cube_material, light, terrain_shaderProgram, GL_TRIANGLES);
+        if (displayController.displayContourCurves())
+        {
+            renderer.Draw(terrain, cube_material, light, isolines_shaderProgram, GL_TRIANGLES);
+            renderer.Draw(terrain, cube_material, light, grayTerrain_shaderProgram, GL_TRIANGLES);
+        }
+        else if (displayController.displayTriangles())
+            renderer.Draw(terrain, cube_material, light, terrainLines_shaderProgram, GL_TRIANGLES);
+        else
+            renderer.Draw(terrain, cube_material, light, terrain_shaderProgram, GL_TRIANGLES);
+
+
 
         glfwSwapBuffers(window);
         glfwPollEvents();

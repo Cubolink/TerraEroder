@@ -13,6 +13,7 @@ add_executable(terra_eroder main.cpp vibrate_kernel.cu
         obj_files.h obj_files.cpp
         camera.h camera.cpp
         controller.h controller.cpp
+        display_controller.h display_controller.cpp
         color.h color.cpp
         shape_factory.h shape_factory.cpp)
 
@@ -32,3 +33,9 @@ target_link_libraries(terra_eroder PRIVATE
         ${THIRD_PARTY_VENDOR_LIBRARIES}
         ${FIRST_PARTY_LIBRARIES}
         )
+
+add_custom_command(
+        TARGET terra_eroder PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources ${CMAKE_BINARY_DIR}/resources
+        COMMENT "Copying resources into the build folder"
+)
