@@ -320,7 +320,8 @@ int main() {
 
     // Init materials
     Material cube_material = Material(0.5f, 0.6f, 0.4f, 100);
-    Light light = Light(1.0f, 1.0f, 1.0f, glm::vec3(0, 0, 50),
+    glm::vec3 lightPos(0, 0, 50);
+    Light light = Light(1.0f, 1.0f, 1.0f, lightPos,
                         0.01f, 0.01f, 0.0001f);
 
     /* Starting main program */
@@ -343,6 +344,7 @@ int main() {
         t0 = t1;
 
         //updateModel(terrain, t1);
+        light.setPosition(lightPos);
 
         renderer.Clear();
         ImGui_ImplOpenGL3_NewFrame();
@@ -420,6 +422,10 @@ int main() {
         ImGui::Begin("Variables");
         ImGui::Text("-> eye-pos: (%.3f, %.3f, %.3f)", camera.getCX(), camera.getCY(), camera.getCZ());
         ImGui::Text("-> center(phi: %.3f, theta: %.3f)", camera.getPhi(), camera.getTheta());
+        ImGui::SliderFloat("light x", &(lightPos.x), -50.f, 50.f);
+        ImGui::SliderFloat("light y", &(lightPos.y), -50.f, 50.f);
+        ImGui::SliderFloat("light z", &(lightPos.z), 5.f, 100.f);
+
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();
 
