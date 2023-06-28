@@ -446,11 +446,24 @@ int main() {
             renderer.Draw(terrain, cube_material, light, terrain_shaderProgram, GL_TRIANGLES);
 
         ImGui::Begin("Variables");
+
+        ImGui::Text("Camera");
+        ImGui::Text("  CONTROLS:");
+        ImGui::Text("  * WASD to move around, SPACE/Shift to move up/down");
+        ImGui::Text("  * Arrows to look around");
+        ImGui::Text("current values");
         ImGui::Text("-> eye-pos: (%.3f, %.3f, %.3f)", camera.getCX(), camera.getCY(), camera.getCZ());
         ImGui::Text("-> center(phi: %.3f, theta: %.3f)", camera.getPhi(), camera.getTheta());
-        ImGui::SliderFloat("light x", &(lightPos.x), terrainBB.min_x, terrainBB.max_x);
-        ImGui::SliderFloat("light y", &(lightPos.y), terrainBB.min_y, terrainBB.max_y);
-        ImGui::SliderFloat("light z", &(lightPos.z), terrainBB.max_z+5, terrainBB.max_z+95);
+
+        ImGui::Text("\nLight Position");
+        ImGui::SliderFloat("x", &(lightPos.x), terrainBB.min_x, terrainBB.max_x);
+        ImGui::SliderFloat("y", &(lightPos.y), terrainBB.min_y, terrainBB.max_y);
+        ImGui::SliderFloat("z", &(lightPos.z), terrainBB.max_z+5, terrainBB.max_z+95);
+
+        ImGui::Text("\nRenderer");
+        ImGui::Text("  CONTROLS:");
+        ImGui::Text("  * TAB to toggle shader \n"
+                    "    [colored terrain | terrain triangle lines | gray terrain + colored contour lines]");
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();
