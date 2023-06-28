@@ -1,8 +1,9 @@
 find_package(CUDA QUIET)
 
 set(THIRD_PARTY_VENDOR_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor)
-set(THIRD_PARTY_VENDOR_LIBRARIES stb_image)
+set(THIRD_PARTY_VENDOR_LIBRARIES stb_image imgui)
 add_subdirectory(vendor/stb_image)
+add_subdirectory(vendor/imgui)
 
 set(FIRST_PARTY_INCLUDE_DIRECTORIES renderer)
 set(FIRST_PARTY_LIBRARIES renderer)

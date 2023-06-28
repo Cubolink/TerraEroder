@@ -6,6 +6,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
 #include <vector_types.h>
@@ -324,6 +327,10 @@ int main() {
 
     Renderer renderer = Renderer();
 
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init();
+
     double t0 = glfwGetTime();
     double t1, dt;
 
@@ -338,6 +345,9 @@ int main() {
         //updateModel(terrain, t1);
 
         renderer.Clear();
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 
         cameraController.updateCameraProperties();
         camera.updateCoords((float) dt);
@@ -407,11 +417,22 @@ int main() {
         else
             renderer.Draw(terrain, cube_material, light, terrain_shaderProgram, GL_TRIANGLES);
 
+        ImGui::Begin("Variables");
+        ImGui::Text("-> eye-pos: (%.3f, %.3f, %.3f)", camera.getCX(), camera.getCY(), camera.getCZ());
+        ImGui::Text("-> center(phi: %.3f, theta: %.3f)", camera.getPhi(), camera.getTheta());
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::End();
 
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     glfwTerminate();
 
