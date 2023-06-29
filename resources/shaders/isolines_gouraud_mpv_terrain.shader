@@ -72,6 +72,8 @@ uniform mat4 u_projection;
 
 uniform float u_deepestLevel;
 uniform float u_levelRange;
+uniform int u_nIsolines;  // This value can be up to 20. More than 20 will have no effect.
+uniform float u_isolines[20];
 
 vec4 interpolate(vec4 A, vec4 B, float lambda)
 {
@@ -88,11 +90,12 @@ vec4 interpolate(vec4 A, vec4 B, float lambda)
 
 void main() {
 
-    int u_nIsolines = 20;
-    for (int kIsoline = 0; kIsoline < u_nIsolines; kIsoline++)
+    int nIsolines = min(20, u_nIsolines);  //
+    for (int kIsoline = 0; kIsoline < nIsolines; kIsoline++)
     {
         // Find the two points where the triangle intersect the isoline, if any.
-        isolineZLevel = u_deepestLevel + u_levelRange * float(kIsoline) / u_nIsolines;
+        //isolineZLevel = u_deepestLevel + u_levelRange * float(kIsoline) / nIsolines;
+        isolineZLevel = u_isolines[kIsoline];
         // Check if AB, BC or CA are parallel to the isolineZLevel. If true, both extrems will form the primitive
         if ((B.z - A.z == 0) && A.z == isolineZLevel)
         {
