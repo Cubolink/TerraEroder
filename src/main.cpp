@@ -36,6 +36,9 @@ glm::mat4 model_m;
 CameraController cameraController;
 DisplayController displayController;
 
+static int randNum;
+static bool applyNoise = false;
+
 std::vector<float> terrain_vertices;
 std::vector<std::vector<float>> heightMap;
 struct BoundingBox {
@@ -110,6 +113,17 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             break;
         case GLFW_KEY_DOWN:
             cameraController.rot_down = (action == GLFW_PRESS || action == GLFW_REPEAT) ? 1: 0;
+            break;
+
+        case GLFW_KEY_T:
+            if (action == GLFW_PRESS)
+            {
+                randNum = std::rand();
+                applyNoise = true;
+            }
+            break;
+        case GLFW_KEY_R:
+            applyNoise = false;
             break;
 
         case GLFW_KEY_TAB:
@@ -366,6 +380,8 @@ int main() {
     for (int kIsoline = 0; kIsoline < nIsolines; kIsoline++) {
         isoLines[kIsoline] = terrainBB.min_z + terrain_z_range * float(kIsoline) / float(nIsolines);
     }
+    std::srand(123);
+    randNum = std::rand();
 
     double t0 = glfwGetTime();
     double t1, dt;
@@ -423,6 +439,8 @@ int main() {
         terrain_shaderProgram.SetUniform1f("u_waterLevel", terrain_water_level);
         terrain_shaderProgram.SetUniform1f("u_deepestLevel", terrainBB.min_z);
         terrain_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
+        terrain_shaderProgram.SetUniform1i("u_applyNoise", (int) applyNoise);
+        terrain_shaderProgram.SetUniform1f("u_randomNumber", (float) randNum);
 
         terrainLines_shaderProgram.Bind();
         terrainLines_shaderProgram.SetUniformMat4f("u_projection", projection_m);
@@ -432,13 +450,17 @@ int main() {
         terrainLines_shaderProgram.SetUniform1f("u_waterLevel", terrain_water_level);
         terrainLines_shaderProgram.SetUniform1f("u_deepestLevel", terrainBB.min_z);
         terrainLines_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
-
+        terrainLines_shaderProgram.SetUniform1i("u_applyNoise", (int) applyNoise);
+        terrainLines_shaderProgram.SetUniform1f("u_randomNumber", (float) randNum);
+        
         grayTerrain_shaderProgram.Bind();
         grayTerrain_shaderProgram.SetUniformMat4f("u_projection", projection_m);
         grayTerrain_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
         grayTerrain_shaderProgram.SetUniformMat4f("u_model", model_m);
         grayTerrain_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
         grayTerrain_shaderProgram.SetUniform3f("color", 0.5f, 0.5f, 0.5f);
+        grayTerrain_shaderProgram.SetUniform1i("u_applyNoise", (int) applyNoise);
+        grayTerrain_shaderProgram.SetUniform1f("u_randomNumber", (float) randNum);
 
         isolines_shaderProgram.Bind();
         isolines_shaderProgram.SetUniformMat4f("u_projection", projection_m);
@@ -450,6 +472,8 @@ int main() {
         isolines_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
         isolines_shaderProgram.SetUniform1i("u_nIsolines", nIsolines);
         isolines_shaderProgram.SetUniform1fv("u_isolines", (int) isoLines.size(), isoLines.data());
+        isolines_shaderProgram.SetUniform1i("u_applyNoise", (int) applyNoise);
+        isolines_shaderProgram.SetUniform1f("u_randomNumber", (float) randNum);
 
         renderer.Draw(square_shape, texture, t_mpv_shaderProgram, GL_TRIANGLES);
         renderer.Draw(normal_color_cube_shape, cube_material, light, gouraud_c_mpv_shaderProgram, GL_TRIANGLES);
@@ -485,6 +509,12 @@ int main() {
         ImGui::SliderFloat("x", &(lightPos.x), terrainBB.min_x, terrainBB.max_x);
         ImGui::SliderFloat("y", &(lightPos.y), terrainBB.min_y, terrainBB.max_y);
         ImGui::SliderFloat("z", &(lightPos.z), terrainBB.max_z+5, terrainBB.max_z+95);
+
+        if (ImGui::Button("Randomize"))
+        {
+            randNum = rand();
+            applyNoise = true;
+        }
 
         ImGui::Text("\nRenderer");
         ImGui::Text("  CONTROLS:");

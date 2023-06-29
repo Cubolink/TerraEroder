@@ -23,11 +23,34 @@ uniform float u_constantAttenuation;
 uniform float u_linearAttenuation;
 uniform float u_quadraticAttenuation;
 
+uniform float u_randomNumber;
+uniform int u_applyNoise;
+
 uniform vec3 color;
+
+
+float rand(vec2 co){
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+vec3 changeVertexPosition(vec3 originalPosition, float minPossibleValue, float valueRange, float extraNum)
+{
+    //float z = valueRange*(noise1(originalPosition.z)+1) + valueRange*(noise1(extraNum)+1);
+    float z = rand(vec2(originalPosition.x, originalPosition.y))+1;
+    z += rand(vec2(originalPosition.z, extraNum))+1;
+    //z = (z+4)/8;  // [0, valueRange]
+    z = valueRange*z/4 + minPossibleValue;
+
+    return vec3(originalPosition.x, originalPosition.y, z);
+}
 
 void main()
 {
-    vec3 vertexPos = vec3(u_model * vec4(position, 1.0));
+    vec3 noisyPosition = position;
+    if (u_applyNoise != 0)
+        noisyPosition = changeVertexPosition(position, u_deepestLevel, u_levelRange, u_randomNumber);
+
+    vec3 vertexPos = vec3(u_model * vec4(noisyPosition, 1.0));
     gl_Position = u_projection * u_view * vec4(vertexPos, 1.0);
 
     // ambient
