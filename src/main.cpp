@@ -354,11 +354,17 @@ int main() {
 
     Renderer renderer = Renderer();
 
+    // ImGui setup
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init();
     const char* shaderSelectorOptions[] = {"Colored terrain", "Gray terrain + colored contour lines", "Terrain triangle lines"};
     static int currentShaderIndex = 0;
+    static int nIsolines = 20;
+    static std::vector<float> isoLines(nIsolines);
+    for (int kIsoline = 0; kIsoline < nIsolines; kIsoline++) {
+        isoLines[kIsoline] = terrainBB.min_z + terrain_z_range * float(kIsoline) / float(nIsolines);
+    }
 
     double t0 = glfwGetTime();
     double t1, dt;
@@ -373,6 +379,13 @@ int main() {
 
         //updateModel(terrain, t1);
         light.setPosition(lightPos);
+        if (isoLines.size() != nIsolines)
+        {
+            isoLines.resize(nIsolines);
+            for (int kIsoline = 0; kIsoline < nIsolines; kIsoline++) {
+                isoLines[kIsoline] = terrainBB.min_z + terrain_z_range * float(kIsoline) / float(nIsolines);
+            }
+        }
 
         renderer.Clear();
         ImGui_ImplOpenGL3_NewFrame();
@@ -433,6 +446,8 @@ int main() {
         isolines_shaderProgram.SetUniform1f("u_waterLevel", terrain_water_level);
         isolines_shaderProgram.SetUniform1f("u_deepestLevel", terrainBB.min_z);
         isolines_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
+        isolines_shaderProgram.SetUniform1i("u_nIsolines", nIsolines);
+        isolines_shaderProgram.SetUniform1fv("u_isolines", (int) isoLines.size(), isoLines.data());
 
         renderer.Draw(square_shape, texture, t_mpv_shaderProgram, GL_TRIANGLES);
         renderer.Draw(normal_color_cube_shape, cube_material, light, gouraud_c_mpv_shaderProgram, GL_TRIANGLES);
@@ -485,6 +500,23 @@ int main() {
                     displayController.switchToDefaultDisplay();
                     break;
             }
+        }
+        ImGui::Text("Isolines Setup");
+        ImGui::SliderInt("n", &nIsolines, 0, 20);
+
+        std::sort(isoLines.begin(), isoLines.end());
+        if (ImGui::TreeNode("Isolines configuration"))
+        {
+            for (int i = 0; i < isoLines.size(); i++)
+            {
+                std::string name("Isoline ");
+                if (i < 9)
+                    name += "0";
+                name += std::to_string(i+1);
+                ImGui::SliderFloat(name.c_str(), &(isoLines[i]),
+                                   terrainBB.min_z, terrainBB.max_z);
+            }
+            ImGui::TreePop();
         }
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
