@@ -61,7 +61,7 @@ void main()
 layout(triangles) in;
 layout(line_strip, max_vertices=40) out;
 
-layout(location = 0) in vec4 shadingResult[];
+in vec4 shadingResult[];
 
 out float isolineZLevel;
 out vec4 interpolatedShading;
