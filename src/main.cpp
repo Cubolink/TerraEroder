@@ -360,6 +360,7 @@ int main() {
     ImGui_ImplOpenGL3_Init();
     const char* shaderSelectorOptions[] = {"Colored terrain", "Gray terrain + colored contour lines", "Terrain triangle lines"};
     static int currentShaderIndex = 0;
+    // Set isoline levels
     static int nIsolines = 20;
     static std::vector<float> isoLines(nIsolines);
     for (int kIsoline = 0; kIsoline < nIsolines; kIsoline++) {
@@ -381,6 +382,7 @@ int main() {
         light.setPosition(lightPos);
         if (isoLines.size() != nIsolines)
         {
+            // Update isolines and reset levels
             isoLines.resize(nIsolines);
             for (int kIsoline = 0; kIsoline < nIsolines; kIsoline++) {
                 isoLines[kIsoline] = terrainBB.min_z + terrain_z_range * float(kIsoline) / float(nIsolines);
