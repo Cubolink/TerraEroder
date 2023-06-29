@@ -175,6 +175,10 @@ void Shader::SetUniform4f(const std::string& name, float v0, float v1, float v2,
     GLCall(glUniform4f(GetUniformLocation(name), v0, v1, v2, v3));
 }
 
+void Shader::SetUniform1fv(const std::string &name, int n, float *v) {
+    GLCall(glUniform1fv(GetUniformLocation(name), n, v));
+}
+
 void Shader::SetUniformMat4f(const std::string& name, const glm::mat4& matrix)
 {
     // Location of the uniform in the shader program, number of matrix, false if we don't need to transpose them, pointer to the first element
