@@ -188,7 +188,7 @@ float fmod(float a, float b)
 vec3 hsv_to_rgb(vec3 hsv_color) {
     // hsv coords <=> xyz coords
     int h_i = mod(int(hsv_color.x / 60), 6);
-    float f = fmod(h_i/60.0, 6) - h_i;
+    float f = fmod(hsv_color.x/60.0, 6) - h_i;
 
     float p = hsv_color.z * (1 - hsv_color.y);
     float q = hsv_color.z * (1 - f*hsv_color.y);
