@@ -23,6 +23,9 @@ uniform float u_constantAttenuation;
 uniform float u_linearAttenuation;
 uniform float u_quadraticAttenuation;
 
+uniform float u_deepestLevel;
+uniform float u_levelRange;
+
 uniform float u_randomNumber;
 uniform int u_applyNoise;
 

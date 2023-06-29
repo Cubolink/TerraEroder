@@ -132,7 +132,7 @@ void main()
 layout(triangles) in;
 layout(line_strip, max_vertices=40) out;
 
-layout(location = 0) in vec4 vertexColor[];
+in vec4 vertexColor[];
 
 out vec4 interpolatedColor;
 
