@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(terraeroder C CXX)
 
-find_package(CUDA)
+# find_package(CUDA)
 if(CUDA_FOUND)
 	enable_language(CUDA)
 	set(CMAKE_CUDA_STANDARD 14)

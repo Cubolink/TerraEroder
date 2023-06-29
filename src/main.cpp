@@ -9,21 +9,11 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 
-#include <cuda_runtime.h>
-#include <cuda_gl_interop.h>
-#include <vector_types.h>
-
 #include "renderer/renderer.h"
 #include "shape_factory.h"
-#include "renderer/CudaShape.h"
 #include "obj_files.h"
 #include "controller.h"
 #include "display_controller.h"
-
-// CUDA kernel interface
-extern "C"
-void cudaRunOscilateKernel(dim3 gridSize, dim3 blockSize, float t,
-                          float* verticesGridVBO, unsigned int width, unsigned int height);
 
 int w_width = 1024;
 int w_height = 576;
@@ -54,12 +44,6 @@ struct BoundingBox {
     max_z(-std::numeric_limits<float>::infinity())
     {}
 };
-
-unsigned int cudaNumBlocks;
-unsigned int cudaNumBodies;
-dim3 cudaBlockSize;
-dim3 cudaGridSize;
-// float* cudaHeightMap;
 
 void resize_callback(GLFWwindow* window, int width, int height)
 {
@@ -136,46 +120,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 
 
-void createTerrainHeightMap()
-{
-    // terrain vertices is not necessarily a grid, it may have better triangulations.
-    // but we do need a grid, in order to map it like m[x][y] = z in a matrix.
-
-    unsigned int mn = terrain_vertices.size() / 6;
-    // assume that it's a square grid
-    unsigned int m, n;
-    m = n = (unsigned int) sqrt(mn);
-    if (m * n != mn)
-    {
-        std::cout << "Unsupported non-square grid terrain" << std::endl;
-        exit(1);
-    }
-    std::cout << "Loaded a squared grid terrain. "
-                 "If that assumption is incorrect, the behaviour of this program is undefined." << std::endl;
-    heightMap = std::vector<std::vector<float>>(m, std::vector<float>(n));
-    // x from 0 to m
-    // y from 0 to n
-    // matrix goes like      x y->
-    //                       |
-    //                      \|/
-    for (unsigned int x = 0; x < m; x++)
-    {
-        for (unsigned int y = 0; y < n; y++)
-        {
-            unsigned int v = x * n + y;  // v contains info of x,y,z and normals, so we need 6*v+2 to get z
-            /*
-            std::cout << "heightMap["<<x<<"]["<<y<<"]="
-                                                   "("<< terrain_vertices[6*v] <<", "
-                                                   << terrain_vertices[6*v+1] << ", "
-                                                   << terrain_vertices[6*v+2] << ")"<<std::endl;
-                                                   */
-            heightMap[x][y] = terrain_vertices[6 * v + 3];
-        }
-    }
-
-}
-
-
 void initGL()
 {
     // Configuring GL
@@ -188,87 +132,6 @@ void initGL()
     glad_glEnable(GL_BLEND);  // enable transparency
     glad_glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // set blending function
     glad_glBlendEquation(GL_FUNC_ADD);  // set blending reslts mixer function
-}
-
-
-void initCUDA() {
-    unsigned int m = heightMap.size();
-    unsigned int n = heightMap[0].size();
-
-    cudaBlockSize.x = 16;
-    cudaBlockSize.y = 16;
-
-    cudaGridSize.x = m / cudaBlockSize.x;
-    if (cudaGridSize.x * cudaBlockSize.x < m)
-        cudaGridSize.x++;  // x-padding
-    cudaGridSize.y = m / cudaBlockSize.y;
-    if (cudaGridSize.y * cudaBlockSize.y < n)
-        cudaGridSize.y++;  // y-padding
-
-    cudaNumBlocks = (cudaGridSize.x * cudaGridSize.y);
-    cudaNumBodies = (cudaBlockSize.x * cudaBlockSize.x) * cudaNumBlocks;  // this > m*n if there was any padding
-
-    /*
-    std::vector<float> planeHeightMap;
-    for (unsigned int x = 0; x < m; x++)
-    {
-        unsigned int cudaN = cudaGridSize.x * cudaBlockSize.x;
-
-        // copy the n elements of the x-row
-        planeHeightMap.insert(planeHeightMap.end(), heightMap[x].begin(), heightMap[x].end());
-        // fill the rest until cudaN (padding)
-        planeHeightMap.resize((x+1) * cudaN);
-    }
-    planeHeightMap.resize(cudaNumBodies);
-     */
-    /*
-    // Initialize a matrix un CUDA
-    unsigned int cudaM = cudaGridSize.x * cudaBlockSize.x;
-    unsigned int cudaN = cudaGridSize.y * cudaBlockSize.y;
-
-    auto** planeHeightMap = new float*[m];  // cudaM for padding
-    for (unsigned int x = 0; x < m; x++)  // same
-    {
-        planeHeightMap[x] = new float[n];  // cudaN for padding
-        for (unsigned int y = 0; y < n; y++)  // same
-        {
-            if (x < m && y < n)
-                planeHeightMap[x][y] = heightMap[x][y];
-            else
-                planeHeightMap[x][y] = 0;
-        }
-    }
-    size_t pitch;
-    //cudaMalloc((void**) &cudaHeightMap, 10*sizeof(float));
-    cudaMallocPitch((void**) &cudaHeightMap, &pitch,
-                    cudaM * sizeof(float),
-                    cudaN
-                    );
-    cudaMemcpy2D(cudaHeightMap, pitch, planeHeightMap, m * sizeof(float),
-                 m * sizeof(float), n, cudaMemcpyHostToDevice);
-
-    for (unsigned int x = 0; x < m; x++)
-    {
-        delete[] planeHeightMap[x];
-    }
-    delete[] planeHeightMap;
-    */
-}
-
-
-void updateModel(CudaShape& terrain, double t)
-{
-    glad_glFinish();
-    float *dPtr = nullptr;
-    size_t numBytes;
-    terrain.cudaMap(&dPtr, &numBytes);
-
-    // Run the kernel
-    cudaRunOscilateKernel(cudaGridSize, cudaBlockSize, (float) t, dPtr,
-                         heightMap.size(), heightMap[0].size());
-
-    cudaDeviceSynchronize();
-    terrain.cudaUnmap();
 }
 
 
@@ -326,12 +189,10 @@ int main() {
     Shape square_shape = ShapeFactory::createTextureQuad();
     Shape axis_shape = ShapeFactory::createColorAxis(1);
     Shape normal_color_cube_shape = ShapeFactory::createColorNormalCube(.2f, .3f, .7f);
-    CudaShape terrain(Obj::readFile("../../data/terrain.obj"));
-    BoundingBox terrainBB;
+    Shape terrain = Obj::readFile("../../data/terrain.obj");
 
     terrain_vertices = terrain.getVertices();
-    createTerrainHeightMap();
-    initCUDA();
+    BoundingBox terrainBB;
     for (int i = 0; i < terrain_vertices.size(); i += 6)
     {
         if (terrain_vertices[i] > terrainBB.max_x)
@@ -452,7 +313,7 @@ int main() {
         terrainLines_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
         terrainLines_shaderProgram.SetUniform1i("u_applyNoise", (int) applyNoise);
         terrainLines_shaderProgram.SetUniform1f("u_randomNumber", (float) randNum);
-        
+
         grayTerrain_shaderProgram.Bind();
         grayTerrain_shaderProgram.SetUniformMat4f("u_projection", projection_m);
         grayTerrain_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
