@@ -177,8 +177,6 @@ int main() {
 
     // Init shaders
     Shader c_mpv_shaderProgram = Shader("../resources/shaders/color_mpv_shader.shader");
-    Shader t_mpv_shaderProgram = Shader("../resources/shaders/texture_mpv_shader.shader");
-    Shader gouraud_c_mpv_shaderProgram = Shader("../resources/shaders/gouraud_color_mpv.shader");
     Shader terrain_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_shader.shader");
     Shader terrainLines_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_trianglelines.shader");
     Shader grayTerrain_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_single_color.shader");
@@ -186,9 +184,7 @@ int main() {
 
     // Init texture and shapes
     Texture texture = Texture("../resources/textures/red_yoshi.png");
-    Shape square_shape = ShapeFactory::createTextureQuad();
     Shape axis_shape = ShapeFactory::createColorAxis(1);
-    Shape normal_color_cube_shape = ShapeFactory::createColorNormalCube(.2f, .3f, .7f);
     Shape terrain = Obj::readFile("../../data/terrain.obj");
 
     terrain_vertices = terrain.getVertices();
@@ -274,23 +270,12 @@ int main() {
         cameraController.updateCameraProperties();
         camera.updateCoords((float) dt);
 
-        t_mpv_shaderProgram.Bind();
-        t_mpv_shaderProgram.SetUniformMat4f("u_projection", projection_m);
-        t_mpv_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
-        t_mpv_shaderProgram.SetUniformMat4f("u_model", model_m);
-        t_mpv_shaderProgram.SetUniform1i("u_texture", 0);
-
         c_mpv_shaderProgram.Bind();
         c_mpv_shaderProgram.SetUniformMat4f("u_projection", projection_m);
         c_mpv_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
         c_mpv_shaderProgram.SetUniformMat4f("u_model", model_m);
 
         glm::vec3 cam_pos = camera.getEyeVec3();
-        gouraud_c_mpv_shaderProgram.Bind();
-        gouraud_c_mpv_shaderProgram.SetUniformMat4f("u_projection", projection_m);
-        gouraud_c_mpv_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
-        gouraud_c_mpv_shaderProgram.SetUniformMat4f("u_model", model_m);
-        gouraud_c_mpv_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
 
         terrain_shaderProgram.Bind();
         terrain_shaderProgram.SetUniformMat4f("u_projection", projection_m);
@@ -336,8 +321,6 @@ int main() {
         isolines_shaderProgram.SetUniform1i("u_applyNoise", (int) applyNoise);
         isolines_shaderProgram.SetUniform1f("u_randomNumber", (float) randNum);
 
-        renderer.Draw(square_shape, texture, t_mpv_shaderProgram, GL_TRIANGLES);
-        renderer.Draw(normal_color_cube_shape, cube_material, light, gouraud_c_mpv_shaderProgram, GL_TRIANGLES);
         renderer.Draw(axis_shape, texture, c_mpv_shaderProgram, GL_LINES);
         if (displayController.displayContourCurves())
         {
