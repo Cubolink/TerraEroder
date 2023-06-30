@@ -87,7 +87,8 @@ los vértices desde el vertex shader. Puede presionar la tecla `R` para restable
 La carpeta `Dependencies` contiene librerías necesarias para todo el proyecto. La carpeta `src/vendor` también contiene
 dependencias externas, pero que funcionan más como subproyectos externos.
 
-La carpeta `resources` contiene las shaders que se utilizan durante la ejecución de la aplicación. 
+La carpeta `resources` contiene las shaders que se utilizan durante la ejecución de la aplicación.
+La carpeta `data` contiene el terreno (.obj) que el programa utiliza.
 
 La carpeta `src/renderer` contiene abstracciones para renderizar con OpenGL.
 
