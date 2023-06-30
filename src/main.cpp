@@ -165,8 +165,6 @@ int main() {
 
     // Init Camera
     Camera camera = Camera();
-    camera.setEye(0, 0, 0);
-    camera.setCenter(0, 0, -1);
     cameraController.setCamera(&camera);
 
     // Init transformations
@@ -212,6 +210,11 @@ int main() {
             << terrainBB.min_z << "->" << terrainBB.max_z << ")"
             << std::endl;
     std::cout << "water_level: " << terrain_water_level;
+    // Init camera position
+    camera.setEye((terrainBB.min_x+terrainBB.max_x)/2,
+                     (terrainBB.min_y+terrainBB.max_y)/2,
+                     terrainBB.max_z+10.f);
+    camera.setCenter(0, 0, -1);
 
     // Init materials
     Material cube_material = Material(0.5f, 0.6f, 0.4f, 100);
