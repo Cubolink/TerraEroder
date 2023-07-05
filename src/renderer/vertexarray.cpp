@@ -29,9 +29,11 @@ void VertexArray::AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& la
 	unsigned int offset = 0;
 	for (unsigned int i = 0; i < elements.size(); i++)  // Iterates over the elements, counting an accumulated offset.
 	{
+        auto offsetSafe = (uintptr_t) offset;  // Just to avoid casting "void * from smaller integer type 'unsigned int'"
+
 		const auto& element = elements[i];
 		glEnableVertexAttribArray(i);  // tells GL to enable the VertexAttributeArray, and then we set a VertexAttributePointer for this element.
-		glVertexAttribPointer(i, element.count, element.type, element.normalized, layout.GetStride(), (const void*) offset);
+		glVertexAttribPointer(i, (GLint) element.count, element.type, element.normalized, (GLint) layout.GetStride(), (const void*) offsetSafe);
 		offset += element.count * VertexBufferElement::GetSizeOfType(element.type);
 	}
 	
