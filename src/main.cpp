@@ -52,11 +52,25 @@ struct BoundingBox {
     {}
 };
 
-unsigned int cudaNumBlocks;
-unsigned int cudaNumBodies;
-dim3 cudaBlockSize;
-dim3 cudaGridSize;
-// float* cudaHeightMap;
+struct CudaParams {
+    unsigned int numBlocks;
+    unsigned int numBodies;
+    dim3 blockSize;
+    dim3 gridSize;
+    // float* heightMap;   // Commented out as it's not a member variable
+
+    // Constructors
+    CudaParams(unsigned int numBlocks, unsigned int numBodies, dim3 blockSize, dim3 gridSize)
+            : numBlocks(numBlocks), numBodies(numBodies), blockSize(blockSize), gridSize(gridSize)
+    {
+    }
+
+    CudaParams()
+            : numBlocks(0), numBodies(0), blockSize(0, 0, 0), gridSize(0, 0, 0)
+    {
+    }
+};
+CudaParams cudaParams;
 
 void resize_callback(GLFWwindow* window, int width, int height)
 {
@@ -181,36 +195,36 @@ void initCUDA() {
     unsigned int m = heightMap.size();
     unsigned int n = heightMap[0].size();
 
-    cudaBlockSize.x = 16;
-    cudaBlockSize.y = 16;
+    cudaParams.blockSize.x = 16;
+    cudaParams.blockSize.y = 16;
 
-    cudaGridSize.x = m / cudaBlockSize.x;
-    if (cudaGridSize.x * cudaBlockSize.x < m)
-        cudaGridSize.x++;  // x-padding
-    cudaGridSize.y = m / cudaBlockSize.y;
-    if (cudaGridSize.y * cudaBlockSize.y < n)
-        cudaGridSize.y++;  // y-padding
+    cudaParams.gridSize.x = m / cudaParams.blockSize.x;
+    if (cudaParams.gridSize.x * cudaParams.blockSize.x < m)
+        cudaParams.gridSize.x++;  // x-padding
+    cudaParams.gridSize.y = m / cudaParams.blockSize.y;
+    if (cudaParams.gridSize.y * cudaParams.blockSize.y < n)
+        cudaParams.gridSize.y++;  // y-padding
 
-    cudaNumBlocks = (cudaGridSize.x * cudaGridSize.y);
-    cudaNumBodies = (cudaBlockSize.x * cudaBlockSize.x) * cudaNumBlocks;  // this > m*n if there was any padding
+    cudaParams.numBlocks = (cudaParams.gridSize.x * cudaParams.gridSize.y);
+    cudaParams.numBodies = (cudaParams.blockSize.x * cudaParams.blockSize.x) * cudaParams.numBlocks;  // this > m*n if there was any padding
 
     /*
     std::vector<float> planeHeightMap;
     for (unsigned int x = 0; x < m; x++)
     {
-        unsigned int cudaN = cudaGridSize.x * cudaBlockSize.x;
+        unsigned int cudaN = cudaParams.gridSize.x * cudaParams.blockSize.x;
 
         // copy the n elements of the x-row
         planeHeightMap.insert(planeHeightMap.end(), heightMap[x].begin(), heightMap[x].end());
         // fill the rest until cudaN (padding)
         planeHeightMap.resize((x+1) * cudaN);
     }
-    planeHeightMap.resize(cudaNumBodies);
+    planeHeightMap.resize(cudaParams.numBodies);
      */
     /*
     // Initialize a matrix un CUDA
-    unsigned int cudaM = cudaGridSize.x * cudaBlockSize.x;
-    unsigned int cudaN = cudaGridSize.y * cudaBlockSize.y;
+    unsigned int cudaM = cudaParams.gridSize.x * cudaParams.blockSize.x;
+    unsigned int cudaN = cudaParams.gridSize.y * cudaParams.blockSize.y;
 
     auto** planeHeightMap = new float*[m];  // cudaM for padding
     for (unsigned int x = 0; x < m; x++)  // same
@@ -250,7 +264,7 @@ void updateModel(CudaShape& terrain, double t)
     terrain.cudaMap(&dPtr, &numBytes);
 
     // Run the kernel
-    cudaRunOscilateKernel(cudaGridSize, cudaBlockSize, (float) t, dPtr,
+    cudaRunOscilateKernel(cudaParams.gridSize, cudaParams.blockSize, (float) t, dPtr,
                          heightMap.size(), heightMap[0].size());
 
     cudaDeviceSynchronize();
