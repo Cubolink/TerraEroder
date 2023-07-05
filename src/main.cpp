@@ -206,7 +206,7 @@ void initCUDA() {
         cudaParams.gridSize.y++;  // y-padding
 
     cudaParams.numBlocks = (cudaParams.gridSize.x * cudaParams.gridSize.y);
-    cudaParams.numBodies = (cudaParams.blockSize.x * cudaParams.blockSize.x) * cudaParams.numBlocks;  // this > m*n if there was any padding
+    cudaParams.numBodies = (cudaParams.blockSize.x * cudaParams.blockSize.y) * cudaParams.numBlocks;  // this > m*n if there was any padding
 
     /*
     std::vector<float> planeHeightMap;
