@@ -3,7 +3,7 @@
 
 
 __global__ void 
-oscilateKernel(float t, float* verticesGrid, unsigned int width, unsigned int height)
+oscilateKernel(float t, float* verticesGrid)
 {
 	// shared memory
     //	extern __shared__ float4 shPosition[];
@@ -12,31 +12,48 @@ oscilateKernel(float t, float* verticesGrid, unsigned int width, unsigned int he
 	unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned int cudaWidth = blockDim.x * gridDim.x;
-    unsigned int cudaHeight = blockDim.y * gridDim.y;
+    //unsigned int cudaHeight = blockDim.y * gridDim.y;
+    unsigned int cudaIdx = x * cudaWidth + y;
 
-    unsigned int cudaIndex = x * cudaWidth + y;
-    cudaIndex *= 6;  // verticesGrid vbo contains x, y, z
+    verticesGrid[cudaIdx] = 2+2*sinf(t + (float) x + (float) y);
 
-    unsigned int index = x * width + y;
-    index *= 6;
-    if (x < width && y < height)
+}
+
+
+__global__ void
+updateVBOKernel(float* verticesGrid, float* verticesVBO, unsigned int width, unsigned  int height)
+{
+    unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
+    unsigned int cudaWidth = blockDim.x * gridDim.x;
+    //unsigned int cudaHeight = blockDim.y * gridDim.y;
+    unsigned int cudaIdx = x * cudaWidth + y;
+
+    if (x < width && y < height)  // Avoid padded objects
     {
-        verticesGrid[index+2] = 2+2*sinf(t + verticesGrid[index] + verticesGrid[index+1]);  // z
-        //verticesGrid[index+3] = 0;
-        //verticesGrid[index+4] = 0;
-        //verticesGrid[index+5] = 1;
+        unsigned int idx = x * width + y;
+
+        // Z coord
+        verticesVBO[6 * idx + 2] = verticesGrid[cudaIdx];
     }
 
 }
 
 extern "C" 
 void cudaRunOscilateKernel(dim3 gridSize, dim3 blockSize, float t,
-                          float* verticesGridVBO, unsigned int width, unsigned int height)
+                          float* verticesGrid)
 {
     //dim3 block(16, 16, 1);
     //dim3 grid(width / block.x, height / block.y, 1);
-    int sharedMemSize = 256 * sizeof(float3);
-    oscilateKernel<<<gridSize, blockSize>>>(t, verticesGridVBO, width, height);
+    //int sharedMemSize = 256 * sizeof(float3);
+    oscilateKernel<<<gridSize, blockSize>>>(t, verticesGrid);
+}
+
+extern "C"
+void cudaUpdateVBO(dim3 gridSize, dim3 blockSize, float* cudaVerticesGrid,
+                   float* verticesVBO, unsigned int width, unsigned int height)
+{
+    updateVBOKernel<<<gridSize, blockSize>>>(cudaVerticesGrid, verticesVBO, width, height);
 }
 
 #endif

@@ -23,7 +23,11 @@
 // CUDA kernel interface
 extern "C"
 void cudaRunOscilateKernel(dim3 gridSize, dim3 blockSize, float t,
-                          float* verticesGridVBO, unsigned int width, unsigned int height);
+                           float* verticesGrid);
+
+extern "C"
+void cudaUpdateVBO(dim3 gridSize, dim3 blockSize, float* cudaVerticesGrid,
+                   float* verticesVBO, unsigned int width, unsigned int height);
 
 int w_width = 1024;
 int w_height = 576;
@@ -258,15 +262,21 @@ void initCUDA() {
 
 void updateModel(CudaShape& terrain, double t)
 {
+    // Run the kernel
+    cudaRunOscilateKernel(cudaParams.gridSize, cudaParams.blockSize, (float) t, cudaParams.heightMap);
+    /*
+    cudaDeviceSynchronize();
+    std::vector<float> download(cudaParams.numBodies);
+    cudaMemcpy(download.data(), cudaParams.heightMap, cudaParams.numBodies * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
+    */
     glad_glFinish();
     float *dPtr = nullptr;
     size_t numBytes;
     terrain.cudaMap(&dPtr, &numBytes);
 
-    // Run the kernel
-    cudaRunOscilateKernel(cudaParams.gridSize, cudaParams.blockSize, (float) t, dPtr,
-                         heightMap.size(), heightMap[0].size());
-
+    cudaDeviceSynchronize();
+    cudaUpdateVBO(cudaParams.gridSize, cudaParams.blockSize, cudaParams.heightMap, dPtr, heightMap.size(), heightMap[0].size());
     cudaDeviceSynchronize();
     terrain.cudaUnmap();
 }
@@ -392,7 +402,7 @@ int main() {
         dt = t1 - t0;
         t0 = t1;
 
-        //updateModel(terrain, t1);
+        updateModel(terrain, t1);
         light.setPosition(lightPos);
         if (isoLines.size() != nIsolines)
         {
