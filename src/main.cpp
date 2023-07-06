@@ -66,7 +66,7 @@ struct CudaParams {
     }
 
     CudaParams()
-            : numBlocks(0), numBodies(0), blockSize(0, 0, 0), gridSize(0, 0, 0)
+            : numBlocks(0), numBodies(0)
     {
     }
 };
