@@ -57,16 +57,16 @@ struct CudaParams {
     unsigned int numBodies;
     dim3 blockSize;
     dim3 gridSize;
-    // float* heightMap;   // Commented out as it's not a member variable
+    float* heightMap;  // May have padding, may be bigger than the CPU and GL heightMap
 
     // Constructors
-    CudaParams(unsigned int numBlocks, unsigned int numBodies, dim3 blockSize, dim3 gridSize)
-            : numBlocks(numBlocks), numBodies(numBodies), blockSize(blockSize), gridSize(gridSize)
+    CudaParams(unsigned int numBlocks, unsigned int numBodies, dim3 blockSize, dim3 gridSize, float* heightMap)
+            : numBlocks(numBlocks), numBodies(numBodies), blockSize(blockSize), gridSize(gridSize), heightMap(heightMap)
     {
     }
 
     CudaParams()
-            : numBlocks(0), numBodies(0)
+            : numBlocks(0), numBodies(0), heightMap(nullptr)
     {
     }
 };
@@ -208,11 +208,10 @@ void initCUDA() {
     cudaParams.numBlocks = (cudaParams.gridSize.x * cudaParams.gridSize.y);
     cudaParams.numBodies = (cudaParams.blockSize.x * cudaParams.blockSize.y) * cudaParams.numBlocks;  // this > m*n if there was any padding
 
-    /*
     std::vector<float> planeHeightMap;
     for (unsigned int x = 0; x < m; x++)
     {
-        unsigned int cudaN = cudaParams.gridSize.x * cudaParams.blockSize.x;
+        unsigned int cudaN = cudaParams.gridSize.y * cudaParams.blockSize.y;
 
         // copy the n elements of the x-row
         planeHeightMap.insert(planeHeightMap.end(), heightMap[x].begin(), heightMap[x].end());
@@ -220,9 +219,11 @@ void initCUDA() {
         planeHeightMap.resize((x+1) * cudaN);
     }
     planeHeightMap.resize(cudaParams.numBodies);
-     */
+
+    // Initialize a matrix in CUDA
+    cudaMalloc((void**) &(cudaParams.heightMap), cudaParams.numBodies*sizeof(float));
+    cudaMemcpy(cudaParams.heightMap, planeHeightMap.data(), planeHeightMap.size() * sizeof(float), cudaMemcpyHostToDevice);
     /*
-    // Initialize a matrix un CUDA
     unsigned int cudaM = cudaParams.gridSize.x * cudaParams.blockSize.x;
     unsigned int cudaN = cudaParams.gridSize.y * cudaParams.blockSize.y;
 
@@ -239,12 +240,11 @@ void initCUDA() {
         }
     }
     size_t pitch;
-    //cudaMalloc((void**) &cudaHeightMap, 10*sizeof(float));
-    cudaMallocPitch((void**) &cudaHeightMap, &pitch,
-                    cudaM * sizeof(float),
-                    cudaN
+    cudaMallocPitch((void**) &cudaParams.heightMap, &pitch,
+                    cudaN * sizeof(float),
+                    cudaM
                     );
-    cudaMemcpy2D(cudaHeightMap, pitch, planeHeightMap, m * sizeof(float),
+    cudaMemcpy2D(cudaParams.heightMap, pitch, planeHeightMap, m * sizeof(float),
                  m * sizeof(float), n, cudaMemcpyHostToDevice);
 
     for (unsigned int x = 0; x < m; x++)
