@@ -28,6 +28,7 @@ void Obj::storeShape(Shape &shape, const std::string &filepath) {
 }
 
 Shape Obj::readFile(const std::string &filepath) {
+    std::cout << "Loading the file " << filepath << std::endl;
     std::ifstream fileStream(filepath);
     if (!fileStream) {
         std::cout << "Error reading the file " << filepath;
@@ -123,6 +124,6 @@ Shape Obj::readFile(const std::string &filepath) {
     count_layouts.push_back(3);
     count_layouts.push_back(3);
 
-    std::cout << "End" << std::endl;
+    std::cout << "Finished reading the file" << std::endl;
     return {shape_vertices, indices, count_layouts};
 }
