@@ -340,7 +340,7 @@ int main() {
     Shape square_shape = ShapeFactory::createTextureQuad();
     Shape axis_shape = ShapeFactory::createColorAxis(1);
     Shape normal_color_cube_shape = ShapeFactory::createColorNormalCube(.2f, .3f, .7f);
-    CudaShape terrain(Obj::readFile("../../data/terrain.obj"));
+    CudaShape terrain(Obj::readFile("../../data/terrain(100x100-res5).obj"));
     BoundingBox terrainBB;
 
     terrain_vertices = terrain.getVertices();
