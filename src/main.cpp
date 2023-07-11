@@ -23,10 +23,10 @@
 // CUDA kernel interface
 extern "C"
 void cudaRunOscilateKernel(dim3 gridSize, dim3 blockSize, float t,
-                           float* verticesGrid);
+                           float3* verticesGrid);
 
 extern "C"
-void cudaUpdateVBO(dim3 gridSize, dim3 blockSize, float* cudaVerticesGrid,
+void cudaUpdateVBO(dim3 gridSize, dim3 blockSize, float3* cudaVerticesGrid,
                    float* verticesVBO, unsigned int width, unsigned int height);
 
 int w_width = 1024;
@@ -41,7 +41,7 @@ CameraController cameraController;
 DisplayController displayController;
 
 std::vector<float> terrain_vertices;
-std::vector<std::vector<float>> heightMap;
+std::vector<std::vector<float3>> terrainGrid;
 struct BoundingBox {
     float min_x, min_y, min_z;
     float max_x, max_y, max_z;
@@ -61,16 +61,16 @@ struct CudaParams {
     unsigned int numBodies;
     dim3 blockSize;
     dim3 gridSize;
-    float* heightMap;  // May have padding, may be bigger than the CPU and GL heightMap
+    float3* dataGrid;  // May have padding, may be bigger than the CPU and GL terrainGrid
 
     // Constructors
-    CudaParams(unsigned int numBlocks, unsigned int numBodies, dim3 blockSize, dim3 gridSize, float* heightMap)
-            : numBlocks(numBlocks), numBodies(numBodies), blockSize(blockSize), gridSize(gridSize), heightMap(heightMap)
+    CudaParams(unsigned int numBlocks, unsigned int numBodies, dim3 blockSize, dim3 gridSize, float3* heightMap)
+            : numBlocks(numBlocks), numBodies(numBodies), blockSize(blockSize), gridSize(gridSize), dataGrid(heightMap)
     {
     }
 
     CudaParams()
-            : numBlocks(0), numBodies(0), heightMap(nullptr)
+            : numBlocks(0), numBodies(0), dataGrid(nullptr)
     {
     }
 };
@@ -156,7 +156,7 @@ void createTerrainHeightMap()
     }
     std::cout << "Loaded a squared grid terrain. "
                  "If that assumption is incorrect, the behaviour of this program is undefined." << std::endl;
-    heightMap = std::vector<std::vector<float>>(m, std::vector<float>(n));
+    terrainGrid = std::vector<std::vector<float3>>(m, std::vector<float3>(n));
     // x from 0 to m
     // y from 0 to n
     // matrix goes like      x y->
@@ -168,12 +168,16 @@ void createTerrainHeightMap()
         {
             unsigned int v = x * n + y;  // v contains info of x,y,z and normals, so we need 6*v+2 to get z
             /*
-            std::cout << "heightMap["<<x<<"]["<<y<<"]="
+            std::cout << "terrainGrid["<<x<<"]["<<y<<"]="
                                                    "("<< terrain_vertices[6*v] <<", "
                                                    << terrain_vertices[6*v+1] << ", "
                                                    << terrain_vertices[6*v+2] << ")"<<std::endl;
                                                    */
-            heightMap[x][y] = terrain_vertices[6 * v + 3];
+            terrainGrid[x][y] = {
+                    terrain_vertices[6 * v + 0],
+                    terrain_vertices[6 * v + 1],
+                    terrain_vertices[6 * v + 2]
+            };
         }
     }
 
@@ -196,8 +200,8 @@ void initGL()
 
 
 void initCUDA() {
-    unsigned int m = heightMap.size();
-    unsigned int n = heightMap[0].size();
+    unsigned int m = terrainGrid.size();
+    unsigned int n = terrainGrid[0].size();
 
     cudaParams.blockSize.x = 16;
     cudaParams.blockSize.y = 16;
@@ -212,21 +216,21 @@ void initCUDA() {
     cudaParams.numBlocks = (cudaParams.gridSize.x * cudaParams.gridSize.y);
     cudaParams.numBodies = (cudaParams.blockSize.x * cudaParams.blockSize.y) * cudaParams.numBlocks;  // this > m*n if there was any padding
 
-    std::vector<float> planeHeightMap;
+    std::vector<float3> planeHeightMap;
     for (unsigned int x = 0; x < m; x++)
     {
         unsigned int cudaN = cudaParams.gridSize.y * cudaParams.blockSize.y;
 
         // copy the n elements of the x-row
-        planeHeightMap.insert(planeHeightMap.end(), heightMap[x].begin(), heightMap[x].end());
+        planeHeightMap.insert(planeHeightMap.end(), terrainGrid[x].begin(), terrainGrid[x].end());
         // fill the rest until cudaN (padding)
         planeHeightMap.resize((x+1) * cudaN);
     }
     planeHeightMap.resize(cudaParams.numBodies);
 
     // Initialize a matrix in CUDA
-    cudaMalloc((void**) &(cudaParams.heightMap), cudaParams.numBodies*sizeof(float));
-    cudaMemcpy(cudaParams.heightMap, planeHeightMap.data(), planeHeightMap.size() * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMalloc((void**) &(cudaParams.dataGrid), cudaParams.numBodies * sizeof(float3));
+    cudaMemcpy(cudaParams.dataGrid, planeHeightMap.data(), planeHeightMap.size() * sizeof(float3), cudaMemcpyHostToDevice);
     /*
     unsigned int cudaM = cudaParams.gridSize.x * cudaParams.blockSize.x;
     unsigned int cudaN = cudaParams.gridSize.y * cudaParams.blockSize.y;
@@ -238,17 +242,17 @@ void initCUDA() {
         for (unsigned int y = 0; y < n; y++)  // same
         {
             if (x < m && y < n)
-                planeHeightMap[x][y] = heightMap[x][y];
+                planeHeightMap[x][y] = terrainGrid[x][y];
             else
                 planeHeightMap[x][y] = 0;
         }
     }
     size_t pitch;
-    cudaMallocPitch((void**) &cudaParams.heightMap, &pitch,
+    cudaMallocPitch((void**) &cudaParams.terrainGrid, &pitch,
                     cudaN * sizeof(float),
                     cudaM
                     );
-    cudaMemcpy2D(cudaParams.heightMap, pitch, planeHeightMap, m * sizeof(float),
+    cudaMemcpy2D(cudaParams.terrainGrid, pitch, planeHeightMap, m * sizeof(float),
                  m * sizeof(float), n, cudaMemcpyHostToDevice);
 
     for (unsigned int x = 0; x < m; x++)
@@ -263,11 +267,11 @@ void initCUDA() {
 void updateModel(CudaShape& terrain, double t)
 {
     // Run the kernel
-    cudaRunOscilateKernel(cudaParams.gridSize, cudaParams.blockSize, (float) t, cudaParams.heightMap);
+    cudaRunOscilateKernel(cudaParams.gridSize, cudaParams.blockSize, (float) t, cudaParams.dataGrid);
     /*
     cudaDeviceSynchronize();
     std::vector<float> download(cudaParams.numBodies);
-    cudaMemcpy(download.data(), cudaParams.heightMap, cudaParams.numBodies * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(download.data(), cudaParams.terrainGrid, cudaParams.numBodies * sizeof(float), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
     */
     glad_glFinish();
@@ -276,7 +280,7 @@ void updateModel(CudaShape& terrain, double t)
     terrain.cudaMap(&dPtr, &numBytes);
 
     cudaDeviceSynchronize();
-    cudaUpdateVBO(cudaParams.gridSize, cudaParams.blockSize, cudaParams.heightMap, dPtr, heightMap.size(), heightMap[0].size());
+    cudaUpdateVBO(cudaParams.gridSize, cudaParams.blockSize, cudaParams.dataGrid, dPtr, terrainGrid.size(), terrainGrid[0].size());
     cudaDeviceSynchronize();
     terrain.cudaUnmap();
 }
