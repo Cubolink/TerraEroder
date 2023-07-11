@@ -231,36 +231,6 @@ void initCUDA() {
     // Initialize a matrix in CUDA
     cudaMalloc((void**) &(cudaParams.dataGrid), cudaParams.numBodies * sizeof(float3));
     cudaMemcpy(cudaParams.dataGrid, dataGrid1D.data(), dataGrid1D.size() * sizeof(float3), cudaMemcpyHostToDevice);
-    /*
-    unsigned int cudaM = cudaParams.gridSize.x * cudaParams.blockSize.x;
-    unsigned int cudaN = cudaParams.gridSize.y * cudaParams.blockSize.y;
-
-    auto** dataGrid1D = new float*[m];  // cudaM for padding
-    for (unsigned int x = 0; x < m; x++)  // same
-    {
-        dataGrid1D[x] = new float[n];  // cudaN for padding
-        for (unsigned int y = 0; y < n; y++)  // same
-        {
-            if (x < m && y < n)
-                dataGrid1D[x][y] = terrainGrid[x][y];
-            else
-                dataGrid1D[x][y] = 0;
-        }
-    }
-    size_t pitch;
-    cudaMallocPitch((void**) &cudaParams.terrainGrid, &pitch,
-                    cudaN * sizeof(float),
-                    cudaM
-                    );
-    cudaMemcpy2D(cudaParams.terrainGrid, pitch, dataGrid1D, m * sizeof(float),
-                 m * sizeof(float), n, cudaMemcpyHostToDevice);
-
-    for (unsigned int x = 0; x < m; x++)
-    {
-        delete[] dataGrid1D[x];
-    }
-    delete[] dataGrid1D;
-    */
 }
 
 
