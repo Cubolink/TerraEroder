@@ -23,10 +23,10 @@
 // CUDA kernel interface
 extern "C"
 void cudaRunOscilateKernel(dim3 gridSize, dim3 blockSize, float t,
-                           float3* verticesGrid);
+                           float4* verticesGrid);
 
 extern "C"
-void cudaUpdateVBO(dim3 gridSize, dim3 blockSize, float3* cudaVerticesGrid,
+void cudaUpdateVBO(dim3 gridSize, dim3 blockSize, float4* cudaVerticesGrid,
                    float* verticesVBO, unsigned int width, unsigned int height);
 
 int w_width = 1024;
@@ -41,7 +41,7 @@ CameraController cameraController;
 DisplayController displayController;
 
 std::vector<float> terrain_vertices;
-std::vector<std::vector<float3>> terrainGrid;
+std::vector<std::vector<float4>> terrainGrid;
 struct BoundingBox {
     float min_x, min_y, min_z;
     float max_x, max_y, max_z;
@@ -61,10 +61,10 @@ struct CudaParams {
     unsigned int numBodies;
     dim3 blockSize;
     dim3 gridSize;
-    float3* dataGrid;  // May have padding, may be bigger than the CPU and GL terrainGrid
+    float4* dataGrid;  // May have padding, may be bigger than the CPU and GL terrainGrid
 
     // Constructors
-    CudaParams(unsigned int numBlocks, unsigned int numBodies, dim3 blockSize, dim3 gridSize, float3* dataGrid)
+    CudaParams(unsigned int numBlocks, unsigned int numBodies, dim3 blockSize, dim3 gridSize, float4* dataGrid)
             : numBlocks(numBlocks), numBodies(numBodies), blockSize(blockSize), gridSize(gridSize), dataGrid(dataGrid)
     {
     }
@@ -156,7 +156,7 @@ void initTerrainGrid()
     }
     std::cout << "Loaded a squared grid terrain. "
                  "If that assumption is incorrect, the behaviour of this program is undefined." << std::endl;
-    terrainGrid = std::vector<std::vector<float3>>(m, std::vector<float3>(n));
+    terrainGrid = std::vector<std::vector<float4>>(m, std::vector<float4>(n));
     // ix from 0 to m
     // jy from 0 to n
     // matrix goes like      x y->
@@ -176,7 +176,8 @@ void initTerrainGrid()
             terrainGrid[ix][jy] = {
                     terrain_vertices[7 * v + 0],
                     terrain_vertices[7 * v + 1],
-                    terrain_vertices[7 * v + 2]
+                    terrain_vertices[7 * v + 2],
+                    terrain_vertices[7 * v + 6]
             };
         }
     }
@@ -216,7 +217,7 @@ void initCUDA() {
     cudaParams.numBlocks = (cudaParams.gridSize.x * cudaParams.gridSize.y);
     cudaParams.numBodies = (cudaParams.blockSize.x * cudaParams.blockSize.y) * cudaParams.numBlocks;  // this > m*n if there was any padding
 
-    std::vector<float3> dataGrid1D;
+    std::vector<float4> dataGrid1D;
     for (unsigned int x = 0; x < m; x++)
     {
         unsigned int cudaN = cudaParams.gridSize.y * cudaParams.blockSize.y;
@@ -229,8 +230,8 @@ void initCUDA() {
     dataGrid1D.resize(cudaParams.numBodies);
 
     // Initialize a matrix in CUDA
-    cudaMalloc((void**) &(cudaParams.dataGrid), cudaParams.numBodies * sizeof(float3));
-    cudaMemcpy(cudaParams.dataGrid, dataGrid1D.data(), dataGrid1D.size() * sizeof(float3), cudaMemcpyHostToDevice);
+    cudaMalloc((void**) &(cudaParams.dataGrid), cudaParams.numBodies * sizeof(float4));
+    cudaMemcpy(cudaParams.dataGrid, dataGrid1D.data(), dataGrid1D.size() * sizeof(float4), cudaMemcpyHostToDevice);
 }
 
 
