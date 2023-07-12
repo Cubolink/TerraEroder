@@ -305,6 +305,7 @@ int main() {
     Shader terrainLines_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_trianglelines.shader");
     Shader grayTerrain_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_single_color.shader");
     Shader isolines_shaderProgram = Shader("../resources/shaders/isolines_gouraud_mpv_terrain.shader");
+    Shader water_shaderProgram = Shader("../resources/shaders/gouraud_mpv_water_over_terrain.shader");
 
     // Init texture and shapes
     Texture texture = Texture("../resources/textures/red_yoshi.png");
@@ -343,6 +344,7 @@ int main() {
 
     // Init materials
     Material cube_material = Material(0.5f, 0.6f, 0.4f, 100);
+    Material water_material = Material(0.5f, 0.8f, 1.f, 100);
     glm::vec3 lightPos((terrainBB.min_x+terrainBB.max_x)/2,
                        (terrainBB.min_y+terrainBB.max_y)/2,
                        terrainBB.max_z+45);
@@ -423,6 +425,12 @@ int main() {
         terrain_shaderProgram.SetUniform1f("u_deepestLevel", terrainBB.min_z);
         terrain_shaderProgram.SetUniform1f("u_levelRange", terrain_z_range);
 
+        water_shaderProgram.Bind();
+        water_shaderProgram.SetUniformMat4f("u_projection", projection_m);
+        water_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
+        water_shaderProgram.SetUniformMat4f("u_model", model_m);
+        water_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
+
         terrainLines_shaderProgram.Bind();
         terrainLines_shaderProgram.SetUniformMat4f("u_projection", projection_m);
         terrainLines_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
@@ -467,6 +475,7 @@ int main() {
         else
         {
             renderer.Draw(terrain, cube_material, light, terrain_shaderProgram, GL_TRIANGLES);
+            renderer.Draw(terrain, water_material, light, water_shaderProgram, GL_TRIANGLES);
             currentShaderIndex = 0;
         }
 

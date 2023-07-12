@@ -18,6 +18,7 @@ oscilateKernel(float t, float4* verticesGrid)
     float x = verticesGrid[cuIdx].x;
     float y = verticesGrid[cuIdx].y;
     verticesGrid[cuIdx].z = 2 + 2 * sinf(t + x + y);
+    verticesGrid[cuIdx].w = max(0.f, -sinf(t + x + y));
 
 }
 
