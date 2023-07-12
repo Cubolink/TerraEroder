@@ -36,7 +36,7 @@ updateVBOKernel(float3* verticesGrid, float* verticesVBO, unsigned int width, un
         unsigned int idx = cuX * width + cuY;
 
         // Z coord
-        verticesVBO[6 * idx + 2] = verticesGrid[cudaIdx].z;
+        verticesVBO[7 * idx + 2] = verticesGrid[cudaIdx].z;
     }
 
 }

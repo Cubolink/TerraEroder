@@ -145,7 +145,7 @@ void initTerrainGrid()
     // terrain vertices is not necessarily a grid, it may have better triangulations.
     // but we do need a grid, in order to map it like m[x][y] = z in a matrix.
 
-    unsigned int mn = terrain_vertices.size() / 6;
+    unsigned int mn = terrain_vertices.size() / 7;  // {x,y,z,nx,ny,nz,water} -> 7 elements per vertex
     // assume that it's a square grid
     unsigned int m, n;
     m = n = (unsigned int) sqrt(mn);
@@ -166,17 +166,17 @@ void initTerrainGrid()
     {
         for (unsigned int jy = 0; jy < n; jy++)
         {
-            unsigned int v = ix * n + jy;  // v contains info of ix,jy,z and normals, so we need 6*v+2 to get z
+            unsigned int v = ix * n + jy;  // v contains info of x,y,z,normals,and water, so we need 7*v+2 to get z
             /*
             std::cout << "terrainGrid["<<ix<<"]["<<jy<<"]="
-                                                   "("<< terrain_vertices[6*v] <<", "
-                                                   << terrain_vertices[6*v+1] << ", "
-                                                   << terrain_vertices[6*v+2] << ")"<<std::endl;
+                                                   "("<< terrain_vertices[7*v] <<", "
+                                                   << terrain_vertices[7*v+1] << ", "
+                                                   << terrain_vertices[7*v+2] << ")"<<std::endl;
                                                    */
             terrainGrid[ix][jy] = {
-                    terrain_vertices[6 * v + 0],
-                    terrain_vertices[6 * v + 1],
-                    terrain_vertices[6 * v + 2]
+                    terrain_vertices[7 * v + 0],
+                    terrain_vertices[7 * v + 1],
+                    terrain_vertices[7 * v + 2]
             };
         }
     }
@@ -316,7 +316,7 @@ int main() {
     terrain_vertices = terrain.getVertices();
     initTerrainGrid();
     initCUDA();
-    for (int i = 0; i < terrain_vertices.size(); i += 6)
+    for (int i = 0; i < terrain_vertices.size(); i += 7)
     {
         if (terrain_vertices[i] > terrainBB.max_x)
             terrainBB.max_x = terrain_vertices[i];
