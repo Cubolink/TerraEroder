@@ -10,6 +10,7 @@ set(FIRST_PARTY_LIBRARIES renderer)
 add_subdirectory(renderer)
 
 add_executable(terra_eroder main.cpp vibrate_kernel.cu
+        erosion.cu
         geometry.h
         obj_files.h obj_files.cpp
         camera.h camera.cpp
