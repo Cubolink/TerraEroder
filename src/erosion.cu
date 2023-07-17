@@ -5,6 +5,46 @@
 
 
 /**
+ * Computes the normals of the grid.
+ *
+ * @param verticesGrid Contains info about x,y,z position of a cell of the terrain, and a water level above the z-height
+ * @param normalsGrid Contains the normal of the cells of the terrain
+ */
+__global__ void
+normalsKernel(float4* verticesGrid, float3* normalsGrid)
+{
+    unsigned int cuX = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int cuY = blockIdx.y * blockDim.y + threadIdx.y;
+    unsigned int cuWidth = blockDim.x * gridDim.x;
+    unsigned int cuHeight = blockDim.y * gridDim.y;
+    unsigned int cuIdx = cuX * cuWidth + cuY;
+
+    // compute indices of neighbor cells. When an index out of bonds, set it as the current cell.
+    unsigned int cuIdxL = cuX > 0 ? (cuX-1) * cuHeight + cuY : cuIdx;
+    unsigned int cuIdxR = (cuX+1) < cuWidth ? (cuX+1) * cuHeight + cuY : cuIdx;
+    unsigned int cuIdxB = cuY > 0 ? cuX * cuHeight + (cuY-1) : cuIdx;
+    unsigned int cuIdxF = (cuY+1) < cuHeight ? cuX * cuHeight + (cuY+1) : cuIdx;
+
+    float3 v1 = {verticesGrid[cuIdxR].x - verticesGrid[cuIdxL].x,
+                 verticesGrid[cuIdxR].y - verticesGrid[cuIdxL].y,
+                 verticesGrid[cuIdxR].z - verticesGrid[cuIdxL].z};
+    float3 v2 = {verticesGrid[cuIdxF].x - verticesGrid[cuIdxB].x,
+                 verticesGrid[cuIdxF].y - verticesGrid[cuIdxB].y,
+                 verticesGrid[cuIdxF].z - verticesGrid[cuIdxB].z};
+    float3 n = {v1.y * v2.z - v1.z * v2.y,
+                v1.z * v2.x - v1.x * v2.z,
+                v1.x * v2.y - v1.y * v2.x
+    };
+    float nn = normf(3, (float*) &n);
+    n.x /= nn;
+    n.y /= nn;
+    n.z /= nn;
+
+    normalsGrid[cuIdx] = n;
+}
+
+
+/**
  *
  * @param dt time interval from the previous to the current time
  * @param dx distance between cells in the x direction
@@ -85,6 +125,12 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
 
     verticesGrid[cuIdx].w = max(0.f, w + (dV / (dx*dy)));
 
+}
+
+extern "C"
+void cudaRunNormalsKernel(dim3 gridSize, dim3 blockSize, float4* verticesGrid, float3* normals)
+{
+    normalsKernel<<<gridSize, blockSize>>>(verticesGrid, normals);
 }
 
 extern "C"

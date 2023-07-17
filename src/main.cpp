@@ -26,6 +26,10 @@ void cudaRunOscilateKernel(dim3 gridSize, dim3 blockSize, float t,
                            float4* verticesGrid);
 
 extern "C"
+void cudaRunNormalsKernel(dim3 gridSize, dim3 blockSize, float4* verticesGrid, float3* normals);
+
+
+extern "C"
 void cudaUpdateVBO(dim3 gridSize, dim3 blockSize, float4* cudaVerticesGrid, float3* cudaNormalsGrid, float* sedimentGrid,
                    float* verticesVBO, unsigned int width, unsigned int height);
 
@@ -280,6 +284,10 @@ void updateModel(CudaShape& terrain, double t, double dt)
                        cudaParams.normalsGrid,
                        cudaParams.waterOutFlowFluxGrid,
                        cudaParams.suspendedSediment);
+    cudaDeviceSynchronize();
+    cudaRunNormalsKernel(cudaParams.gridSize, cudaParams.blockSize,
+                         cudaParams.dataGrid,
+                         cudaParams.normalsGrid);
     /*
     cudaDeviceSynchronize();
     cudaRunOscilateKernel(cudaParams.gridSize, cudaParams.blockSize, (float) t, cudaParams.dataGrid);
