@@ -17,7 +17,7 @@ normalsKernel(float4* verticesGrid, float3* normalsGrid)
     unsigned int cuY = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned int cuWidth = blockDim.x * gridDim.x;
     unsigned int cuHeight = blockDim.y * gridDim.y;
-    unsigned int cuIdx = cuX * cuWidth + cuY;
+    unsigned int cuIdx = cuX * cuHeight + cuY;
 
     // compute indices of neighbor cells. When an index out of bonds, set it as the current cell.
     unsigned int cuIdxL = cuX > 0 ? (cuX-1) * cuHeight + cuY : cuIdx;
@@ -61,7 +61,7 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
     unsigned int cuY = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned int cuWidth = blockDim.x * gridDim.x;
     unsigned int cuHeight = blockDim.y * gridDim.y;
-    unsigned int cuIdx = cuX * cuWidth + cuY;
+    unsigned int cuIdx = cuX * cuHeight + cuY;
 
     // compute indices of neighbor cells. When an index out of bonds, set it as the current cell.
 

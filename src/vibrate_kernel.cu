@@ -11,9 +11,9 @@ oscilateKernel(float t, float4* verticesGrid)
 	// index of my body	
 	unsigned int cuX = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int cuY = blockIdx.y * blockDim.y + threadIdx.y;
-    unsigned int cuWidth = blockDim.x * gridDim.x;
-    //unsigned int cudaHeight = blockDim.cuY * gridDim.cuY;
-    unsigned int cuIdx = cuX * cuWidth + cuY;
+    //unsigned int cuWidth = blockDim.x * gridDim.x;
+    unsigned int cuHeight = blockDim.y * gridDim.y;
+    unsigned int cuIdx = cuX * cuHeight + cuY;
 
     float x = verticesGrid[cuIdx].x;
     float y = verticesGrid[cuIdx].y;
@@ -28,13 +28,13 @@ updateVBOKernel(float4* verticesGrid, float3* normalsGrid, float* sedimentGrid, 
 {
     unsigned int cuX = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int cuY = blockIdx.y * blockDim.y + threadIdx.y;
-    unsigned int cuWidth = blockDim.x * gridDim.x;
-    //unsigned int cudaHeight = blockDim.cuY * gridDim.cuY;
-    unsigned int cudaIdx = cuX * cuWidth + cuY;
+    // unsigned int cuWidth = blockDim.x * gridDim.x;
+    unsigned int cuHeight = blockDim.y * gridDim.y;
+    unsigned int cudaIdx = cuX * cuHeight + cuY;
 
     if (cuX < width && cuY < height)  // Avoid padded objects
     {
-        unsigned int idx = cuX * width + cuY;
+        unsigned int idx = cuX * height + cuY;
 
         // Z coord
         verticesVBO[8 * idx + 2] = verticesGrid[cudaIdx].z;
