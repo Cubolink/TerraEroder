@@ -2,7 +2,7 @@
 #define _VIBRATE_KERNEL_CU_
 
 
-__global__ void 
+__global__ void
 oscilateKernel(float t, float4* verticesGrid)
 {
 	// shared memory
