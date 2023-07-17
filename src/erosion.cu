@@ -10,10 +10,12 @@
  * @param dx distance between cells in the x direction
  * @param dy distance between cells in the y direction
  * @param verticesGrid Contains info about x,y,z position of a cell of the terrain, and a water level above the z-height
+ * @param normalsGrid Contains the normal of the cells of the terrain
  * @param waterOutflowFlux Flux from a cell to the neighbors in this order: Left (x-), Right (x+), Back (y-), Front (y+)
+ * @param suspendedSediment Suspended sediment amount in the water
  */
 __global__ void
-erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float4* waterOutflowFlux)//, float3* waterSpeed, float* suspendedSediment)
+erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsGrid, float4* waterOutflowFlux, float* suspendedSediment)
 {
     unsigned int cuX = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int cuY = blockIdx.y * blockDim.y + threadIdx.y;
@@ -86,9 +88,9 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float4* waterOut
 }
 
 extern "C"
-void cudaRunErodeKernel(dim3 gridSize, dim3 blockSize, float dt, float dx, float dy, float4* verticesGrid, float4* waterOutflowFlux)
+void cudaRunErodeKernel(dim3 gridSize, dim3 blockSize, float dt, float dx, float dy, float4* verticesGrid, float3* normals, float4* waterOutflowFlux, float* suspendedSediment)
 {
-    erodeKernel<<<gridSize, blockSize>>>(dt, dx, dy, verticesGrid, waterOutflowFlux);
+    erodeKernel<<<gridSize, blockSize>>>(dt, dx, dy, verticesGrid, normals, waterOutflowFlux, suspendedSediment);
 }
 
 #endif

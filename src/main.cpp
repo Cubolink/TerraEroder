@@ -26,11 +26,12 @@ void cudaRunOscilateKernel(dim3 gridSize, dim3 blockSize, float t,
                            float4* verticesGrid);
 
 extern "C"
-void cudaUpdateVBO(dim3 gridSize, dim3 blockSize, float4* cudaVerticesGrid,
+void cudaUpdateVBO(dim3 gridSize, dim3 blockSize, float4* cudaVerticesGrid, float3* cudaNormalsGrid, float* sedimentGrid,
                    float* verticesVBO, unsigned int width, unsigned int height);
 
 extern "C"
-void cudaRunErodeKernel(dim3 gridSize, dim3 blockSize, float dt, float dx, float dy, float4* verticesGrid, float4* waterOutflowFlux);
+void cudaRunErodeKernel(dim3 gridSize, dim3 blockSize, float dt, float dx, float dy, float4* verticesGrid,
+                        float3* normals, float4* waterOutflowFlux, float* suspendedSediment);
 
 int w_width = 1024;
 int w_height = 576;
@@ -45,6 +46,7 @@ DisplayController displayController;
 
 std::vector<float> terrain_vertices;
 std::vector<std::vector<float4>> terrainGrid;
+std::vector<std::vector<float3>> normalsGrid;
 struct BoundingBox {
     float min_x, min_y, min_z;
     float max_x, max_y, max_z;
@@ -65,16 +67,21 @@ struct CudaParams {
     dim3 blockSize;
     dim3 gridSize;
     float4* dataGrid;  // May have padding, may be bigger than the CPU and GL terrainGrid
+    float3* normalsGrid;
     float4* waterOutFlowFluxGrid;
+    float* suspendedSediment;
 
     // Constructors
-    CudaParams(unsigned int numBlocks, unsigned int numBodies, dim3 blockSize, dim3 gridSize, float4* dataGrid, float4* waterOutFlowFluxGrid)
-            : numBlocks(numBlocks), numBodies(numBodies), blockSize(blockSize), gridSize(gridSize), dataGrid(dataGrid), waterOutFlowFluxGrid(waterOutFlowFluxGrid)
+    CudaParams(unsigned int numBlocks, unsigned int numBodies, dim3 blockSize, dim3 gridSize,
+               float4* dataGrid, float3* normalsGrid, float4* waterOutFlowFluxGrid, float* suspendedSediment)
+            : numBlocks(numBlocks), numBodies(numBodies), blockSize(blockSize), gridSize(gridSize),
+            dataGrid(dataGrid), normalsGrid(normalsGrid), waterOutFlowFluxGrid(waterOutFlowFluxGrid), suspendedSediment(suspendedSediment)
     {
     }
 
     CudaParams()
-            : numBlocks(0), numBodies(0), dataGrid(nullptr), waterOutFlowFluxGrid(nullptr)
+            : numBlocks(0), numBodies(0), dataGrid(nullptr), normalsGrid(nullptr), waterOutFlowFluxGrid(nullptr),
+            suspendedSediment(nullptr)
     {
     }
 };
@@ -149,7 +156,7 @@ void initTerrainGrid()
     // terrain vertices is not necessarily a grid, it may have better triangulations.
     // but we do need a grid, in order to map it like m[x][y] = z in a matrix.
 
-    unsigned int mn = terrain_vertices.size() / 7;  // {x,y,z,nx,ny,nz,water} -> 7 elements per vertex
+    unsigned int mn = terrain_vertices.size() / 8;  // {x,y,z,nx,ny,nz,water,sediment} -> 8 elements per vertex
     // assume that it's a square grid
     unsigned int m, n;
     m = n = (unsigned int) sqrt(mn);
@@ -161,6 +168,7 @@ void initTerrainGrid()
     std::cout << "Loaded a squared grid terrain. "
                  "If that assumption is incorrect, the behaviour of this program is undefined." << std::endl;
     terrainGrid = std::vector<std::vector<float4>>(m, std::vector<float4>(n));
+    normalsGrid = std::vector<std::vector<float3>>(m, std::vector<float3>(n));
     // ix from 0 to m
     // jy from 0 to n
     // matrix goes like      x y->
@@ -170,18 +178,23 @@ void initTerrainGrid()
     {
         for (unsigned int jy = 0; jy < n; jy++)
         {
-            unsigned int v = ix * n + jy;  // v contains info of x,y,z,normals,and water, so we need 7*v+2 to get z
+            unsigned int v = ix * n + jy;  // v contains info of x,y,z,normals,water,sediment, so we need 8*v+2 to get z
             /*
             std::cout << "terrainGrid["<<ix<<"]["<<jy<<"]="
-                                                   "("<< terrain_vertices[7*v] <<", "
-                                                   << terrain_vertices[7*v+1] << ", "
-                                                   << terrain_vertices[7*v+2] << ")"<<std::endl;
+                                                   "("<< terrain_vertices[8*v] <<", "
+                                                   << terrain_vertices[8*v+1] << ", "
+                                                   << terrain_vertices[8*v+2] << ")"<<std::endl;
                                                    */
             terrainGrid[ix][jy] = {
-                    terrain_vertices[7 * v + 0],
-                    terrain_vertices[7 * v + 1],
-                    terrain_vertices[7 * v + 2],
-                    terrain_vertices[7 * v + 6]
+                    terrain_vertices[8 * v + 0],
+                    terrain_vertices[8 * v + 1],
+                    terrain_vertices[8 * v + 2],
+                    terrain_vertices[8 * v + 6]
+            };
+            normalsGrid[ix][jy] = {
+                    terrain_vertices[8 * v + 3],
+                    terrain_vertices[8 * v + 4],
+                    terrain_vertices[8 * v + 5],
             };
         }
     }
@@ -224,14 +237,20 @@ void initCUDA() {
     unsigned int cudaM = cudaParams.gridSize.x * cudaParams.blockSize.x;
     unsigned int cudaN = cudaParams.gridSize.y * cudaParams.blockSize.y;
     std::vector<float4> dataGrid1D;
+    std::vector<float3> normalsGrid1D;
     for (unsigned int x = 0; x < m; x++)
     {
         // copy the n elements of the x-row
         dataGrid1D.insert(dataGrid1D.end(), terrainGrid[x].begin(), terrainGrid[x].end());
+        normalsGrid1D.insert(normalsGrid1D.end(), normalsGrid[x].begin(), normalsGrid[x].end());
         // fill the rest until cudaN (padding)
         dataGrid1D.resize((x + 1) * cudaN);
+        normalsGrid1D.resize((x + 1) * cudaN);
         for (unsigned int y = n; y < cudaN; y++)
+        {
             dataGrid1D[x*cudaN + y] = terrainGrid[x][n-1];  //fill the padded values with the last non-padded in the row
+            normalsGrid1D[x*cudaN + y] = normalsGrid[x][n-1];
+        }
     }
     dataGrid1D.resize(cudaParams.numBodies);
     // fill the padded rows as copies of the last non-padded row
@@ -242,8 +261,12 @@ void initCUDA() {
     // Initialize a matrix in CUDA
     cudaMalloc((void**) &(cudaParams.dataGrid), cudaParams.numBodies * sizeof(float4));
     cudaMemcpy(cudaParams.dataGrid, dataGrid1D.data(), dataGrid1D.size() * sizeof(float4), cudaMemcpyHostToDevice);
+    cudaMalloc((void**) &(cudaParams.normalsGrid), cudaParams.numBodies * sizeof(float3));
+    cudaMemcpy(cudaParams.normalsGrid, normalsGrid1D.data(), normalsGrid1D.size() * sizeof(float3), cudaMemcpyHostToDevice);
     cudaMalloc((void**) &(cudaParams.waterOutFlowFluxGrid), cudaParams.numBodies * sizeof(float4));
     cudaMemset(cudaParams.waterOutFlowFluxGrid, 0, cudaParams.numBodies * sizeof(float4));
+    cudaMalloc((void**) &(cudaParams.suspendedSediment), cudaParams.numBodies * sizeof(float));
+    cudaMemset(cudaParams.suspendedSediment, 0, cudaParams.numBodies * sizeof(float));
 }
 
 
@@ -254,7 +277,9 @@ void updateModel(CudaShape& terrain, double t, double dt)
                        terrainGrid[1][0].x - terrainGrid[0][0].x,
                        terrainGrid[0][1].y - terrainGrid[0][0].y,
                        cudaParams.dataGrid,
-                       cudaParams.waterOutFlowFluxGrid);
+                       cudaParams.normalsGrid,
+                       cudaParams.waterOutFlowFluxGrid,
+                       cudaParams.suspendedSediment);
     /*
     cudaDeviceSynchronize();
     cudaRunOscilateKernel(cudaParams.gridSize, cudaParams.blockSize, (float) t, cudaParams.dataGrid);
@@ -269,7 +294,8 @@ void updateModel(CudaShape& terrain, double t, double dt)
     terrain.cudaMap(&dPtr, &numBytes);
 
     cudaDeviceSynchronize();
-    cudaUpdateVBO(cudaParams.gridSize, cudaParams.blockSize, cudaParams.dataGrid, dPtr, terrainGrid.size(), terrainGrid[0].size());
+    cudaUpdateVBO(cudaParams.gridSize, cudaParams.blockSize, cudaParams.dataGrid, cudaParams.normalsGrid,
+                  cudaParams.suspendedSediment, dPtr, terrainGrid.size(), terrainGrid[0].size());
     cudaDeviceSynchronize();
     terrain.cudaUnmap();
 }
@@ -336,7 +362,7 @@ int main() {
     terrain_vertices = terrain.getVertices();
     initTerrainGrid();
     initCUDA();
-    for (int i = 0; i < terrain_vertices.size(); i += 7)
+    for (int i = 0; i < terrain_vertices.size(); i += 8)
     {
         if (terrain_vertices[i] > terrainBB.max_x)
             terrainBB.max_x = terrain_vertices[i];
@@ -385,6 +411,7 @@ int main() {
     for (int kIsoline = 0; kIsoline < nIsolines; kIsoline++) {
         isoLines[kIsoline] = terrainBB.min_z + terrain_z_range * float(kIsoline) / float(nIsolines);
     }
+    static float sedimentColorIntensity = 1.f;
 
     double t0 = glfwGetTime();
     double t1, dt;
@@ -448,6 +475,7 @@ int main() {
         water_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
         water_shaderProgram.SetUniformMat4f("u_model", model_m);
         water_shaderProgram.SetUniform3f("u_viewPosition", cam_pos.x, cam_pos.y, cam_pos.z);
+        water_shaderProgram.SetUniform1f("u_sedimentColorIntensity", sedimentColorIntensity);
 
         terrainLines_shaderProgram.Bind();
         terrainLines_shaderProgram.SetUniformMat4f("u_projection", projection_m);
@@ -511,6 +539,9 @@ int main() {
         ImGui::SliderFloat("x", &(lightPos.x), terrainBB.min_x, terrainBB.max_x);
         ImGui::SliderFloat("y", &(lightPos.y), terrainBB.min_y, terrainBB.max_y);
         ImGui::SliderFloat("z", &(lightPos.z), terrainBB.max_z+5, terrainBB.max_z+95);
+
+        ImGui::Text("\nSediment color intensity upscale");
+        ImGui::SliderFloat("intensity", &sedimentColorIntensity, 1.f, 1000.f);
 
         ImGui::Text("\nRenderer");
         ImGui::Text("  CONTROLS:");

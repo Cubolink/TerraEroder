@@ -4,6 +4,7 @@
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in float waterHeight;
+layout(location = 3) in float sediment;
 
 out vec4 vertexColor;
 
@@ -23,6 +24,8 @@ uniform uint u_shininess;
 uniform float u_constantAttenuation;
 uniform float u_linearAttenuation;
 uniform float u_quadraticAttenuation;
+
+uniform float u_sedimentColorIntensity;
 
 void main()
 {
@@ -51,7 +54,10 @@ void main()
                         + u_quadraticAttenuation * distToLight * distToLight;
 
     // color
-    vec3 color = vec3(0.2666f, 0.7333f, 1.f);
+    vec3 blue = vec3(0.2666f, 0.7333f, 1.f);
+    vec3 brown = vec3(0.5255f, 0.3490f, 0.1137f);
+    float pond = min(1.f, u_sedimentColorIntensity * sediment/waterHeight);
+    vec3 color = pond * brown + (1 - pond) * blue;
 
     vec3 result = (ambient + ((diffuse + specular) / attenuation)) * color;
     vertexColor = vec4(result, min(0.3f, waterHeight));

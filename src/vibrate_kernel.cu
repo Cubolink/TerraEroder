@@ -24,7 +24,7 @@ oscilateKernel(float t, float4* verticesGrid)
 
 
 __global__ void
-updateVBOKernel(float4* verticesGrid, float* verticesVBO, unsigned int width, unsigned  int height)
+updateVBOKernel(float4* verticesGrid, float3* normalsGrid, float* sedimentGrid, float* verticesVBO, unsigned int width, unsigned  int height)
 {
     unsigned int cuX = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int cuY = blockIdx.y * blockDim.y + threadIdx.y;
@@ -37,9 +37,15 @@ updateVBOKernel(float4* verticesGrid, float* verticesVBO, unsigned int width, un
         unsigned int idx = cuX * width + cuY;
 
         // Z coord
-        verticesVBO[7 * idx + 2] = verticesGrid[cudaIdx].z;
+        verticesVBO[8 * idx + 2] = verticesGrid[cudaIdx].z;
+        // Normals
+        verticesVBO[8 * idx + 3] = normalsGrid[cudaIdx].x;
+        verticesVBO[8 * idx + 4] = normalsGrid[cudaIdx].y;
+        verticesVBO[8 * idx + 5] = normalsGrid[cudaIdx].z;
         // Water level
-        verticesVBO[7 * idx + 6] = verticesGrid[cudaIdx].w;
+        verticesVBO[8 * idx + 6] = verticesGrid[cudaIdx].w;
+        // Sediment
+        verticesVBO[8 * idx + 7] = sedimentGrid[cudaIdx];
     }
 
 }
@@ -55,10 +61,10 @@ void cudaRunOscilateKernel(dim3 gridSize, dim3 blockSize, float t,
 }
 
 extern "C"
-void cudaUpdateVBO(dim3 gridSize, dim3 blockSize, float4* cudaVerticesGrid,
+void cudaUpdateVBO(dim3 gridSize, dim3 blockSize, float4* cudaVerticesGrid, float3* cudaNormalsGrid, float* sedimentGrid,
                    float* verticesVBO, unsigned int width, unsigned int height)
 {
-    updateVBOKernel<<<gridSize, blockSize>>>(cudaVerticesGrid, verticesVBO, width, height);
+    updateVBOKernel<<<gridSize, blockSize>>>(cudaVerticesGrid, cudaNormalsGrid, sedimentGrid, verticesVBO, width, height);
 }
 
 #endif
