@@ -29,6 +29,9 @@ extern "C"
 void cudaUpdateVBO(dim3 gridSize, dim3 blockSize, float4* cudaVerticesGrid,
                    float* verticesVBO, unsigned int width, unsigned int height);
 
+extern "C"
+void cudaRunErodeKernel(dim3 gridSize, dim3 blockSize, float dt, float dx, float dy, float4* verticesGrid, float4* waterOutflowFlux);
+
 int w_width = 1024;
 int w_height = 576;
 float w_proportion;
@@ -62,15 +65,16 @@ struct CudaParams {
     dim3 blockSize;
     dim3 gridSize;
     float4* dataGrid;  // May have padding, may be bigger than the CPU and GL terrainGrid
+    float4* waterOutFlowFluxGrid;
 
     // Constructors
-    CudaParams(unsigned int numBlocks, unsigned int numBodies, dim3 blockSize, dim3 gridSize, float4* dataGrid)
-            : numBlocks(numBlocks), numBodies(numBodies), blockSize(blockSize), gridSize(gridSize), dataGrid(dataGrid)
+    CudaParams(unsigned int numBlocks, unsigned int numBodies, dim3 blockSize, dim3 gridSize, float4* dataGrid, float4* waterOutFlowFluxGrid)
+            : numBlocks(numBlocks), numBodies(numBodies), blockSize(blockSize), gridSize(gridSize), dataGrid(dataGrid), waterOutFlowFluxGrid(waterOutFlowFluxGrid)
     {
     }
 
     CudaParams()
-            : numBlocks(0), numBodies(0), dataGrid(nullptr)
+            : numBlocks(0), numBodies(0), dataGrid(nullptr), waterOutFlowFluxGrid(nullptr)
     {
     }
 };
@@ -217,29 +221,43 @@ void initCUDA() {
     cudaParams.numBlocks = (cudaParams.gridSize.x * cudaParams.gridSize.y);
     cudaParams.numBodies = (cudaParams.blockSize.x * cudaParams.blockSize.y) * cudaParams.numBlocks;  // this > m*n if there was any padding
 
+    unsigned int cudaM = cudaParams.gridSize.x * cudaParams.blockSize.x;
+    unsigned int cudaN = cudaParams.gridSize.y * cudaParams.blockSize.y;
     std::vector<float4> dataGrid1D;
     for (unsigned int x = 0; x < m; x++)
     {
-        unsigned int cudaN = cudaParams.gridSize.y * cudaParams.blockSize.y;
-
         // copy the n elements of the x-row
         dataGrid1D.insert(dataGrid1D.end(), terrainGrid[x].begin(), terrainGrid[x].end());
         // fill the rest until cudaN (padding)
         dataGrid1D.resize((x + 1) * cudaN);
+        for (unsigned int y = n; y < cudaN; y++)
+            dataGrid1D[x*cudaN + y] = terrainGrid[x][n-1];  //fill the padded values with the last non-padded in the row
     }
     dataGrid1D.resize(cudaParams.numBodies);
+    // fill the padded rows as copies of the last non-padded row
+    for (unsigned int x = m; x < cudaM; x++)
+        for (unsigned int y = 0; y < cudaN; y++)
+            dataGrid1D[x*cudaN + y] = dataGrid1D[(m-1)*cudaN + y];
 
     // Initialize a matrix in CUDA
     cudaMalloc((void**) &(cudaParams.dataGrid), cudaParams.numBodies * sizeof(float4));
     cudaMemcpy(cudaParams.dataGrid, dataGrid1D.data(), dataGrid1D.size() * sizeof(float4), cudaMemcpyHostToDevice);
+    cudaMalloc((void**) &(cudaParams.waterOutFlowFluxGrid), cudaParams.numBodies * sizeof(float4));
+    cudaMemset(cudaParams.waterOutFlowFluxGrid, 0, cudaParams.numBodies * sizeof(float4));
 }
 
 
-void updateModel(CudaShape& terrain, double t)
+void updateModel(CudaShape& terrain, double t, double dt)
 {
     // Run the kernel
-    cudaRunOscilateKernel(cudaParams.gridSize, cudaParams.blockSize, (float) t, cudaParams.dataGrid);
+    cudaRunErodeKernel(cudaParams.gridSize, cudaParams.blockSize, (float) dt,
+                       terrainGrid[1][0].x - terrainGrid[0][0].x,
+                       terrainGrid[0][1].y - terrainGrid[0][0].y,
+                       cudaParams.dataGrid,
+                       cudaParams.waterOutFlowFluxGrid);
     /*
+    cudaDeviceSynchronize();
+    cudaRunOscilateKernel(cudaParams.gridSize, cudaParams.blockSize, (float) t, cudaParams.dataGrid);
     cudaDeviceSynchronize();
     std::vector<float> download(cudaParams.numBodies);
     cudaMemcpy(download.data(), cudaParams.terrainGrid, cudaParams.numBodies * sizeof(float), cudaMemcpyDeviceToHost);
@@ -379,7 +397,7 @@ int main() {
         dt = t1 - t0;
         t0 = t1;
 
-        updateModel(terrain, t1);
+        updateModel(terrain, t1, dt);
         light.setPosition(lightPos);
         if (isoLines.size() != nIsolines)
         {
