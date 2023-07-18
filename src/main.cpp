@@ -335,6 +335,8 @@ int main() {
         return -1;
     std::cout << "Current GL Version: " << glad_glGetString(GL_VERSION) << std::endl;
 
+    glfwMaximizeWindow(window);
+    glfwGetWindowSize(window, &w_width, &w_height);
     initGL();
 
     // Init Camera
