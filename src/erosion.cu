@@ -72,8 +72,9 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
 
     const float r = 0.0001f;  // rain rate for each cell
     const float kr = 1.f;  // rain rate scale
-    const float A = dx*dy;  // cross-section area of virtual pipes
+    const float kc = 0.1f;  // sediment transportation capacity
     const float l = (dx+dy)/2;  // length of virtual pipes
+    const float A = pi * l * l / 4.f;  // cross-section area of virtual pipes. I'm using a circle with radius=l/2
 
     float x = verticesGrid[cuIdx].x;
     float y = verticesGrid[cuIdx].y;
@@ -99,7 +100,7 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
     fb = max(0.f, fb + dt * A * (g * dhB / l));
     ff = max(0.f, ff + dt * A * (g * dhF / l));
     // scale down the fluxes such that the total flux is, at most, the amount of water
-    float k = min(1.f, (w * dx * dy) / ((fl + fr + fb + ff) * dt));
+    float k = min(1.f, (w * dx * dy) / ((fl + fr + fb + ff) * dt + 0.00001f));  // avoid division by 0 (should not happen tho)
     fl *= k;
     fr *= k;
     fb *= k;
@@ -123,7 +124,8 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
 
     // Update the water height
 
-    verticesGrid[cuIdx].w = max(0.f, w + (dV / (dx*dy)));
+    float w2 = max(0.f, w + (dV / (dx * dy)));
+    verticesGrid[cuIdx].w = w2;
 
 }
 
