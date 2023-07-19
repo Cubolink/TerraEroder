@@ -2,6 +2,7 @@
 #define _EROSION_CU
 
 #define g 9.8067f
+#define pi 3.1415f
 
 
 /**
@@ -73,13 +74,18 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
     const float r = 0.0001f;  // rain rate for each cell
     const float kr = 1.f;  // rain rate scale
     const float kc = 0.1f;  // sediment transportation capacity
+    const float kd = 0.01f;  // sediment deposition
+    const float ks = 0.005f;  // sediment dissolving
+    const float kh = 1.f;  // sediment softness
     const float l = (dx+dy)/2;  // length of virtual pipes
     const float A = pi * l * l / 4.f;  // cross-section area of virtual pipes. I'm using a circle with radius=l/2
+    const float lmax = 0.5f;  // limit to the water depth's erode capability (to avoid the deep water erode too much)
 
     float x = verticesGrid[cuIdx].x;
     float y = verticesGrid[cuIdx].y;
     float z = verticesGrid[cuIdx].z;  // terrain height
     float w = verticesGrid[cuIdx].w;  // water level
+    float s = suspendedSediment[cuIdx];  // suspended sediment
 
     // update water height due to rain
     w += r * kr * dt;
@@ -127,6 +133,46 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
     float w2 = max(0.f, w + (dV / (dx * dy)));
     verticesGrid[cuIdx].w = w2;
 
+    // Compute the xy-velocity field and use it to compute the water sediment
+
+    // Average xy-flux
+    float wVX = ((waterOutflowFlux[cuIdxL].y - fl)  // Left cell's right - current's left
+            + (fr -waterOutflowFlux[cuIdxR].x)) / 2.f;  // Right cell's left - current's right
+    float wVY = ((waterOutflowFlux[cuIdxB].w - fb)  // Back cell's front - current's back
+            + (ff - waterOutflowFlux[cuIdxF].z)) / 2.f;  // Front cell's back - current's front
+    // Average xy linear velocity
+    float u = wVX / A;//(l * ((w + w2) / 2.f));
+    float v = wVY / A;//(l * ((w + w2) / 2.f));
+    // Sediment capacity
+    float C = -kc * (normalsGrid[cuIdx].x * u + normalsGrid[cuIdx].y * v + normalsGrid[cuIdx].z) * norm3df(u, v, 0) * min(lmax, w2);
+    float w3 = w2;
+    if (C > s)
+    {
+        float ds = min(dt * ks * (C - s), z);  // dissolve, at most, the amount of terrain
+        z -= ds;
+        s += ds;
+        //w3 += ds;
+    }
+    else
+    {
+        float ds = min(dt * kd * (s - C), s);  // deposit, at most, the amount of dissolved sediment
+        z += ds;
+        s -= ds;
+        //w3 -= ds;
+    }
+    /*
+    // Ultra-optimized code
+    float ds = C - s;
+    ds = (ds > 0) ?
+            ks * ds : // Dissolve some soil in the water
+            kd * ds;  // Deposite some sediment in the soil
+    z -= ds * dt;  // this will add or subtract depending on the sign of ds
+    s += ds * dt;
+    float w3 = max(0.f, w2 + ds * dt);  // to improve stability according to paper, we have to increment the water level when dissolving soil
+    */
+    verticesGrid[cuIdx].z = max(z, 0.f);
+    verticesGrid[cuIdx].w = max(w3, 0.f);
+    suspendedSediment[cuIdx] = max(s, 0.f);
 }
 
 extern "C"
