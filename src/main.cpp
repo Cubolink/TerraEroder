@@ -437,7 +437,7 @@ int main() {
     while(!glfwWindowShouldClose(window))
     {
         t1 = glfwGetTime();
-        dt = t1 - t0;
+        dt = fmin(t1 - t0, 1.f/30.f);  // So if we lag too much, we will slow down. Improves simulation stability
         t0 = t1;
 
         updateModel(terrain, t1, dt);
