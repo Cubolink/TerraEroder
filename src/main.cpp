@@ -360,6 +360,7 @@ int main() {
     Shader grayTerrain_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_single_color.shader");
     Shader isolines_shaderProgram = Shader("../resources/shaders/isolines_gouraud_mpv_terrain.shader");
     Shader water_shaderProgram = Shader("../resources/shaders/gouraud_mpv_water_over_terrain.shader");
+    Shader terrainNormals_shaderProgram = Shader("../resources/shaders/gouraud_mpv_terrain_face_normals.shader");
 
     // Init texture and shapes
     Texture texture = Texture("../resources/textures/red_yoshi.png");
@@ -514,6 +515,11 @@ int main() {
         isolines_shaderProgram.SetUniform1i("u_nIsolines", nIsolines);
         isolines_shaderProgram.SetUniform1fv("u_isolines", (int) isoLines.size(), isoLines.data());
 
+        terrainNormals_shaderProgram.Bind();
+        terrainNormals_shaderProgram.SetUniformMat4f("u_projection", projection_m);
+        terrainNormals_shaderProgram.SetUniformMat4f("u_view", camera.getViewMatrix());
+        terrainNormals_shaderProgram.SetUniformMat4f("u_model", model_m);
+
         renderer.Draw(square_shape, texture, t_mpv_shaderProgram, GL_TRIANGLES);
         renderer.Draw(normal_color_cube_shape, cube_material, light, gouraud_c_mpv_shaderProgram, GL_TRIANGLES);
         renderer.Draw(axis_shape, texture, c_mpv_shaderProgram, GL_LINES);
@@ -534,6 +540,7 @@ int main() {
             renderer.Draw(terrain, water_material, light, water_shaderProgram, GL_TRIANGLES);
             currentShaderIndex = 0;
         }
+        renderer.Draw(terrain, terrainNormals_shaderProgram, GL_TRIANGLES);
 
         ImGui::Begin("Variables");
 

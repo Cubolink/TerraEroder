@@ -22,6 +22,12 @@ void Renderer::Draw(const VertexArray &vao, const IndexBuffer &ibo, const Textur
     GLCall(glDrawElements(GL_TRIANGLES, ibo.GetCount(), GL_UNSIGNED_INT, nullptr));
 }
 
+void Renderer::Draw(const Shape &shape, const Shader &shader, int gl_mode) const {
+    shader.Bind();
+    shape.Bind();
+    GLCall(glDrawElements(gl_mode, shape.getIBOCount(), GL_UNSIGNED_INT, nullptr));
+}
+
 void Renderer::Draw(const Shape &shape, const Texture &texture, const Shader &shader) const {
     shader.Bind();
     shape.Bind();
