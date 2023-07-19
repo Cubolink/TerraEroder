@@ -148,6 +148,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         case GLFW_KEY_TAB:
             if (action == GLFW_PRESS)
                 displayController.toggleDisplay();
+            break;
+        case GLFW_KEY_N:
+            if (action == GLFW_PRESS)
+                displayController.toggleNormals();
+            break;
 
         default:
             break;
@@ -540,7 +545,8 @@ int main() {
             renderer.Draw(terrain, water_material, light, water_shaderProgram, GL_TRIANGLES);
             currentShaderIndex = 0;
         }
-        renderer.Draw(terrain, terrainNormals_shaderProgram, GL_TRIANGLES);
+        if (displayController.displayNormals())
+            renderer.Draw(terrain, terrainNormals_shaderProgram, GL_TRIANGLES);
 
         ImGui::Begin("Variables");
 
@@ -577,6 +583,8 @@ int main() {
                     break;
             }
         }
+        if (ImGui::Button("toggle normals"))
+            displayController.toggleNormals();
         ImGui::Text("Isolines Setup");
         ImGui::SliderInt("n", &nIsolines, 0, 20);
 
