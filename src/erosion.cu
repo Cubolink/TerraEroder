@@ -173,6 +173,39 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
     verticesGrid[cuIdx].z = max(z, 0.f);
     verticesGrid[cuIdx].w = max(w3, 0.f);
     suspendedSediment[cuIdx] = max(s, 0.f);
+    __syncthreads();
+
+    // Move dissolved sediment along the water
+
+    // use xy coords of a cell to get the ids of the 4 cells nearer to that coordinate
+    float fromX = max(0.f, x - u * dt);  // x-coord of the cell from where we're taking the sediment.
+    float fromY = max(0.f, y - v * dt);  // y-coord of the cell from where we're taking the sediment
+    // the (idx, idy) will be around 4 cells, so we interpolate them
+    // | <-y->
+    // x  A  C
+    // |  B  D
+    //
+    // cuFromIdxX = (x - x0) / dx, but I'm assuming (x0, y0) is (0, 0) in the grid
+    unsigned int cuFromIdX = max(0, min(cuWidth - 1, int (fromX / dx)));
+    unsigned int cuFromIdY = max(0, min(cuHeight - 1, int (fromY / dy)));
+    unsigned int cuFromIdX2 = min(cuWidth, cuFromIdX + 1);
+    unsigned int cuFromIdY2 = min(cuHeight - 1, cuFromIdY + 1);
+    // Finally get the ids
+    unsigned int cuFromAIdx = cuFromIdX * cuHeight + cuFromIdY;
+    unsigned int cuFromBIdx = cuFromIdX2 * cuHeight + cuFromIdY;
+    unsigned int cuFromCIdx = cuFromIdX * cuHeight + cuFromIdY2;
+    unsigned int cuFromDIdx = cuFromIdX2* cuHeight + cuFromIdY2;
+    // and get the weights of those cells
+    float px = (fromX / dx) - (float) cuFromIdX;  // get decimal part. 0 means is nearer to AB, 1 is nearer to CD
+    float py = (fromY / dy) - (float) cuFromIdY;  // 0 means nearer to AC, 1 nearer to BD
+    float incomingSediment = (1 - py) * (
+            (1 - px) * suspendedSediment[cuFromAIdx] + px * suspendedSediment[cuFromBIdx]
+    )
+                             + py * (
+            (1 - px) * suspendedSediment[cuFromCIdx] + px * suspendedSediment[cuFromDIdx]
+    );
+    __syncthreads();
+    suspendedSediment[cuIdx] = incomingSediment;
 }
 
 extern "C"
