@@ -73,6 +73,7 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
 
     const float r = 0.0001f;  // rain rate for each cell
     const float kr = 1.f;  // rain rate scale
+    const float ke = 0.00009f;  // water evaporation
     const float kc = 0.1f;  // sediment transportation capacity
     const float kd = 0.01f;  // sediment deposition
     const float ks = 0.005f;  // sediment dissolving
@@ -169,8 +170,7 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
     s += ds * dt;
     float w3 = max(0.f, w2 + ds * dt);  // to improve stability according to paper, we have to increment the water level when dissolving soil
     */
-    verticesGrid[cuIdx].z = max(z, 0.f);
-    verticesGrid[cuIdx].w = max(w3, 0.f);
+    verticesGrid[cuIdx].z = z;
     suspendedSediment[cuIdx] = max(s, 0.f);
     __syncthreads();
 
@@ -205,6 +205,9 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
     );
     __syncthreads();
     suspendedSediment[cuIdx] = incomingSediment;
+
+    // Water evaporation
+    verticesGrid[cuIdx].w = max(w3 - ke * dt, 0.f);
 }
 
 extern "C"
