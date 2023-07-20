@@ -54,3 +54,11 @@ bool DisplayController::displayTriangles() const
 {
     return useTriangleLines && !useContourCurves;
 }
+
+void DisplayController::toggleNormals() {
+    showNormals = !showNormals;
+}
+
+bool DisplayController::displayNormals() const {
+    return showNormals;
+}
