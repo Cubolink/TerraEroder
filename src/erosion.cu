@@ -131,7 +131,6 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
     // Update the water height
 
     float w2 = max(0.f, w + (dV / (dx * dy)));
-    verticesGrid[cuIdx].w = w2;
 
     // Compute the xy-velocity field and use it to compute the water sediment
 
