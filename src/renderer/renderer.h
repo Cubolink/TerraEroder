@@ -19,6 +19,7 @@ class Renderer
 public:
 	void Draw(const VertexArray& vao, const IndexBuffer& ibo, const Shader& shader) const;
     void Draw(const VertexArray& vao, const IndexBuffer& ibo, const Texture& texture, const Shader& shader) const;
+    void Draw(const Shape& shape, const Shader& shader, int gl_mode) const;
     void Draw(const Shape& shape, const Texture& texture, const Shader& shader) const;
     void Draw(const Shape& shape, const Texture& texture, const Shader& shader, int gl_mode) const;
     void Draw(const Shape& shape, const Material& material, const Light& light, Shader& shader, int gl_mode) const;

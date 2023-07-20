@@ -12,6 +12,8 @@ private:
     bool useTriangleLines;
     unsigned int mode;
 
+    bool showNormals;
+
 public:
     DisplayController();
 
@@ -27,6 +29,9 @@ public:
 
     bool displayTriangles() const;
 
+    void toggleNormals();
+
+    bool displayNormals() const;
 };
 
 

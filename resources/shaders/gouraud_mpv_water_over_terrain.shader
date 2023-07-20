@@ -4,6 +4,7 @@
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in float waterHeight;
+layout(location = 3) in float sediment;
 
 out vec4 vertexColor;
 
@@ -24,50 +25,11 @@ uniform float u_constantAttenuation;
 uniform float u_linearAttenuation;
 uniform float u_quadraticAttenuation;
 
-uniform float u_waterLevel;
-uniform float u_deepestLevel;
-uniform float u_levelRange;
-
-int mod(int a, int b)
-{
-    return a - (b * int(a / b));
-}
-
-float fmod(float a, float b)
-{
-    return a - (b * int(a/b));
-}
-
-vec3 hsv_to_rgb(vec3 hsv_color) {
-    // hsv coords <=> xyz coords
-    int h_i = mod(int(hsv_color.x / 60), 6);
-    float f = fmod(hsv_color.x/60.0, 6) - h_i;
-
-    float p = hsv_color.z * (1 - hsv_color.y);
-    float q = hsv_color.z * (1 - f*hsv_color.y);
-    float t = hsv_color.z * (1 - (1 - f) * hsv_color.y);
-
-    switch (h_i) {
-        case 0:
-            return vec3(hsv_color.z, t, p);
-        case 1:
-            return vec3(q, hsv_color.z, p);
-        case 2:
-            return vec3(p, hsv_color.z, t);
-        case 3:
-            return vec3(p, q, hsv_color.z);
-        case 4:
-            return vec3(t, p, hsv_color.z);
-        case 5:
-            return vec3(hsv_color.z, p, q);
-        default:
-            return vec3(0, 0, 0);
-    }
-}
+uniform float u_sedimentColorIntensity;
 
 void main()
 {
-    vec3 vertexPos = vec3(u_model * vec4(position, 1.0));
+    vec3 vertexPos = vec3(u_model * vec4(position.x, position.y, position.z + waterHeight, 1.0));
     gl_Position = u_projection * u_view * vec4(vertexPos, 1.0);
 
     // ambient
@@ -92,18 +54,13 @@ void main()
                         + u_quadraticAttenuation * distToLight * distToLight;
 
     // color
-    vec3 color;
-    if (position.z < u_waterLevel)
-    {
-        color = vec3(0, 0, 1);
-    }
-    else
-    {
-        float hue = 240 * (position.z - u_deepestLevel) / u_levelRange;
-        color = hsv_to_rgb(vec3(240.f - hue, 1.f, .5f));
-    }
+    vec3 blue = vec3(0.2666f, 0.7333f, 1.f);
+    vec3 brown = vec3(0.5255f, 0.3490f, 0.1137f);
+    float pond = min(1.f, u_sedimentColorIntensity * sediment/waterHeight);
+    vec3 color = pond * brown + (1 - pond) * blue;
+
     vec3 result = (ambient + ((diffuse + specular) / attenuation)) * color;
-    vertexColor = vec4(result, 1.0);
+    vertexColor = vec4(result, min(0.3f, waterHeight));
 }
 
 #shader fragment

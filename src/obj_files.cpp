@@ -106,7 +106,7 @@ Shape Obj::readFile(const std::string &filepath) {
         exit(1);
     }
 
-    std::vector<float> shape_vertices;  // 'vx, vy, vz, r, g, b, nvx, nvy, nvz' as a single vertex
+    std::vector<float> shape_vertices;  // 'vx, vy, vz, nvx, nvy, nvz, waterHeight, sediment' as a single vertex
     for (int i = 0; i < vertices.size(); i += 3)
     {
         // vertex position
@@ -118,11 +118,19 @@ Shape Obj::readFile(const std::string &filepath) {
         shape_vertices.push_back(normals[i]);
         shape_vertices.push_back(normals[i+1]);
         shape_vertices.push_back(normals[i+2]);
+
+        // water height
+        shape_vertices.push_back(0.f);
+
+        // water sediment
+        shape_vertices.push_back(0.f);
     }
 
     std::vector<int> count_layouts;
     count_layouts.push_back(3);
     count_layouts.push_back(3);
+    count_layouts.push_back(1);
+    count_layouts.push_back(1);
 
     std::cout << "Finished reading the file" << std::endl;
     return {shape_vertices, indices, count_layouts};
