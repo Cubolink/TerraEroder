@@ -151,14 +151,14 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
         float ds = min(dt * ks * (C - s), z);  // dissolve, at most, the amount of terrain
         z -= ds;
         s += ds;
-        //w3 += ds;
+        w3 += ds;
     }
     else
     {
         float ds = min(dt * kd * (s - C), s);  // deposit, at most, the amount of dissolved sediment
         z += ds;
         s -= ds;
-        //w3 -= ds;
+        w3 -= ds;
     }
     /*
     // Ultra-optimized code
