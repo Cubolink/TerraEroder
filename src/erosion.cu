@@ -146,6 +146,7 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
     // Sediment capacity
     float C = -kc * (normalsGrid[cuIdx].x * u + normalsGrid[cuIdx].y * v + normalsGrid[cuIdx].z) * norm3df(u, v, 0) * min(lmax, w2);
     float w3 = w2;
+    /*
     if (C > s)
     {
         float ds = min(dt * ks * (C - s), z);  // dissolve, at most, the amount of terrain
@@ -160,16 +161,16 @@ erodeKernel(float dt, float dx, float dy, float4* verticesGrid, float3* normalsG
         s -= ds;
         w3 -= ds;
     }
-    /*
+    */
     // Ultra-optimized code
     float ds = C - s;
     ds = (ds > 0) ?
-            ks * ds : // Dissolve some soil in the water
-            kd * ds;  // Deposite some sediment in the soil
-    z -= ds * dt;  // this will add or subtract depending on the sign of ds
-    s += ds * dt;
-    float w3 = max(0.f, w2 + ds * dt);  // to improve stability according to paper, we have to increment the water level when dissolving soil
-    */
+            min(dt * ks * ds, z) : // Dissolve some soil in the water, but not more than the amount of terrain
+            max(dt * kd * ds, -s);  // Deposite some sediment in the soil, not more than the available
+    z -= ds;  // this will add or subtract depending on the sign of ds
+    s += ds;
+    w3 += ds;  // to improve stability according to paper, we have to increment the water level when dissolving soil
+
     verticesGrid[cuIdx].z = z;
     suspendedSediment[cuIdx] = max(s, 0.f);
     __syncthreads();
